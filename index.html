@@ -1,9 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html class="no-js" lang="en" xmlns="http://www.w3.org/1999/html">
+  <head>
     <meta charset="utf-8" />
-    <title>canvas2svg.js</title>
-</head>
-<body id="index" class="home">
-</body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>canvas2svg</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link href="css/github.css" rel="stylesheet" type="text/css">
+    <script src="js/modernizr.js"></script>
+  </head>
+  <body>
+  <a href="https://raw.github.com/gliffy/canvas2svg"><img style="z-index:9999; position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+
+  <div class="row">
+      <div class="large-12 columns">
+        <h1>Canvas2Svg.js</h1>
+        <h6>Turns your Canvas into SVG using javascript.</h6>
+      </div>
+    </div>
+    
+    <div class="row">
+        <div class="large-8 columns">
+            <h2>Why?</h2>
+            <ul>
+                <li>You have a canvas drawing you want to persist as an SVG file.</li>
+                <li>You like exporting things.</li>
+                <li><a href="https://www.gliffy.com">Gliffy</a> needed it and wanted to share.</li>
+                <li>Because <a href="http://www.codinghorror.com/blog/2007/07/the-principle-of-least-power.html">Atwood's Law.<a/></li>
+
+            </ul>
+        </div>
+        <div class="large-4 columns">
+            <div class="panel">
+                <a class="button" href="https://raw.github.com/gliffy/canvas2svg/master/canvas2svg.js">Download Canvas2Svg.js <br/> v1.0</a>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div class="row">
+      <div class="large-12 columns">
+          <h2>But I want SVG to Canvas!</h2>
+          <p>Sorry wrong project. Try the excellent <a href="https://code.google.com/p/canvg/">canvg</a> instead.</p>
+      </div>
+    </div>
+
+  <div class="row">
+      <div class="large-12 columns">
+          <h2>Examples, Please</h2>
+          <p>Here's a rectangle:</p>
+<pre data-language="javascript">
+//make a mock canvas context using canvas2svg. We use a C2S namespace for less typing:
+var ctx = new C2S(500,500); //width, height of your desired svg file
+//do your normal canvas stuff:
+ctx.fillStyle="red";
+ctx.fillRect(100,100,100,100);
+//ok lets serialize to SVG:
+var myRectangle = ctx.toString(true); //true here will replace any named entities with numbered ones.
+                                      //Standalone SVG doesn't support most named entities.
+</pre>
+<p>The string output of myRectangle looks like this:</p>
+<pre>&lt;svg version=&quot;1.1&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; width=&quot;500&quot; height=&quot;500&quot;&gt;&lt;defs&gt;&lt;/defs&gt;&lt;g&gt;&lt;rect fill=&quot;red&quot; stroke=&quot;none&quot; x=&quot;100&quot; y=&quot;100&quot; width=&quot;100&quot; height=&quot;100&quot;&gt;&lt;/rect&gt;&lt;/g&gt;&lt;/svg&gt;</pre>
+ <p>What good is that string? You can ping it against your server using "content-disposition: attachment" and let the user download it directly.</p>
+          <h2>That's pretty boring, I want something meatier!</h2>
+          <p>A ctx has been set up for you with a 600x600 canvas. Just use the interactive demo below:</p>
+          <textarea id="code" style="min-height:100px;"></textarea>
+          <div class="row">
+              <div class="large-6 columns left">
+                  Click to load more examples: <a href="#" class="example" data-id="tiger">Complex</a> | <a href="#" class="example" data-id="gradient">Gradient</a> |  <a href="#" class="example" data-id="text">Text</a>
+              </div>
+              <div class="large-6 columns">
+                <a class="button secondary right" id="export">Export!</a>
+              </div>
+          </div>
+          <dl class="tabs" data-tab>
+              <dd class="active"><a href="#panel2-1"  style="border:1px solid #CCC; border-right:none;" >Inline SVG</a></dd>
+              <dd><a href="#panel2-2"  style="border:1px solid #CCC;">Serialized SVG</a></dd>
+          </dl>
+          <div class="tabs-content" style="border:1px solid #CCC;">
+              <div class="content active" id="panel2-1">
+                  <div id="svgcontainer" style="background:white;"></div>
+              </div>
+              <div class="content" id="panel2-2">
+                  <code id="output" ></code>
+              </div>
+          </div>
+
+
+
+          <h2>Anything else I should know?</h2>
+          <ul>
+            <li>Some canvas context methods have not been implemented. (Honestly, some just don't make sense to implement.)
+                The ones to watch out for are arcTo and setTransform. </li>
+            <li>There is basic support for gradients, clips, and patterns.</li>
+            <li>Please create a github issue if you find bugs or have a feature request.</li>
+          </ul>
+          <h2>License:</h2>
+          <p>MIT</p>
+          <h2>Browser Support:</h2>
+          <ul>
+              <li>Chrome</li>
+              <li>FF</li>
+              <li>IE9+</li>
+          </ul>
+          <p>As long as your browser supports SVG and canvas, this library should mostly work.
+              SVG is rather quirky between browser implementations though.</p>
+          <h2>Credits:</h2>
+          <p>Canvas2Svg.js was created by  <a href="https://www.gliffy.com">Gliffy Inc.</a></p>
+      </div>
+  </div>
+    
+    <script src="js/jquery.js"></script>
+    <script src="js/foundation.min.js"></script>
+    <script src="js/rainbow-custom.min.js"></script>
+    <script src="canvas2svg.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+  </body>
 </html>
