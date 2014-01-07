@@ -60,7 +60,8 @@ var myRectangle = ctx.toString(true); //true here will replace any named entitie
                                       //Standalone SVG doesn't support most named entities.
 </pre>
 <p>The string output of myRectangle looks like this:</p>
-<pre>&lt;svg version=&quot;1.1&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; width=&quot;500&quot; height=&quot;500&quot;&gt;&lt;defs&gt;&lt;/defs&gt;&lt;g&gt;&lt;rect fill=&quot;red&quot; stroke=&quot;none&quot; x=&quot;100&quot; y=&quot;100&quot; width=&quot;100&quot; height=&quot;100&quot;&gt;&lt;/rect&gt;&lt;/g&gt;&lt;/svg&gt;</pre>
+<pre>&lt;svg version=&quot;1.1&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; width=&quot;500&quot; height=&quot;500&quot;&gt;
+&lt;defs&gt;&lt;/defs&gt;&lt;g&gt;&lt;rect fill=&quot;red&quot; stroke=&quot;none&quot; x=&quot;100&quot; y=&quot;100&quot; width=&quot;100&quot; height=&quot;100&quot;&gt;&lt;/rect&gt;&lt;/g&gt;&lt;/svg&gt;</pre>
  <p>What good is that string? You can ping it against your server using "content-disposition: attachment" and let the user download it directly.</p>
           <h2>That's pretty boring, I want something meatier!</h2>
           <p>A ctx has been set up for you with a 600x600 canvas. Just use the interactive demo below:</p>
