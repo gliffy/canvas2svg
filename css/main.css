@@ -1,0 +1,32 @@
+@charset "UTF-8";
+/* CSS Document */
+body {
+	color:#666;
+}
+.banner {
+	background:#88C406;
+	border-bottom:10px solid #F7EB09;
+	text-align: center;
+	padding: 10px 0 30px 0;
+	margin-bottom:20px;
+	
+}
+
+.banner h1 {
+	font-size:70px;
+	font-weight:bold;
+	color:#fff;
+	margin-bottom:0;
+}
+
+.banner h6 {
+	font-size:20px;
+	color:#fff;
+	margin-top:0;
+}
+
+h2 {
+	font-weight:bold;
+	color:#000;
+	font-size: 32px;
+}
