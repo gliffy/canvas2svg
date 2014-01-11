@@ -37,4 +37,4 @@ Some canvas 2d context methods are not implemented yet. Watch out for setTransfo
 
 License
 ==========
-This plugin is licensed under the MIT license.
+This library is licensed under the MIT license.
