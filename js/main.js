@@ -12,11 +12,11 @@
     var update = function(event) {
       event.preventDefault();
       var customCode = new Function("ctx", new String($code.val()));
-      var ctx = new C2S(600,600);
+      var ctx = new C2S({width:600, height:600});
       customCode(ctx);
-      $output.text(ctx.toString(true));
+      $output.text(ctx.getSerializedSvg(true));
       $svgcontainer.html("");
-      $svgcontainer.append(ctx.__root);
+      $svgcontainer.append(ctx.getSvg());
     };
 
     $export.on("click", function(event) {

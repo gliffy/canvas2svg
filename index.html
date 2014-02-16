@@ -32,7 +32,7 @@
         </div>
         <div class="large-4 columns">
             <div class="panel">
-                <a class="button" href="https://raw.github.com/gliffy/canvas2svg/master/canvas2svg.js">Download Canvas2Svg.js <br/> v1.0</a>
+                <a class="button" href="https://raw.github.com/gliffy/canvas2svg/master/canvas2svg.js">Download Canvas2Svg.js <br/> v1.0.1</a>
             </div>
         </div>
 
@@ -57,7 +57,7 @@ var ctx = new C2S(500,500); //width, height of your desired svg file
 ctx.fillStyle="red";
 ctx.fillRect(100,100,100,100);
 //ok lets serialize to SVG:
-var myRectangle = ctx.toString(true); //true here will replace any named entities with numbered ones.
+var myRectangle = ctx.getSerializedSvg(true); //true here will replace any named entities with numbered ones.
                                       //Standalone SVG doesn't support most named entities.
 </pre>
 <p>The string output of myRectangle looks like this:</p>
