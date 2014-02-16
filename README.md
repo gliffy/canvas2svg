@@ -25,10 +25,10 @@ ctx.fillRect(100,100,100,100);
 //etc...
 
 //serialize your SVG
-var mySerializedSVG = ctx.toString(); //true here, if you need to convert named to numbered entities.
+var mySerializedSVG = ctx.getSerializedSvg(); //true here, if you need to convert named to numbered entities.
 
 //If you really need to you can access the shadow inline SVG created by calling:
-var svg = ctx.__root;
+var svg = ctx.getSvg();
 ```
 
 Misc

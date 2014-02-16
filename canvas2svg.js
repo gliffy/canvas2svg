@@ -189,12 +189,34 @@
 
     /**
      * The mock canvas context
-     * @param width - width of your canvas
-     * @param height - height of your canvas
+     * @param options - options include:
+     * width - width of your canvas (defaults to 500)
+     * height - height of your canvas (defaults to 500)
+     * enableMirroring - enables canvas mirroring (get image data) (defaults to false)
      */
-    ctx = function(width, height) {
-        this.width = width || 500;
-        this.height = height || 500;
+    ctx = function(options) {
+
+        var defaultOptions = { width:500, height:500, enableMirroring : false };
+
+        //keep support for this way of calling C2S: new C2S(width,height)
+        if(arguments.length > 1) {
+            options = defaultOptions;
+            options.width = arguments[0];
+            options.height = arguments[1];
+        } else if( !options ) {
+            options = defaultOptions;
+        }
+
+        if(!(this instanceof ctx)) {
+            //did someone call this without new?
+            return new ctx(options);
+        }
+
+        //setup options
+        this.width = options.width || defaultOptions.width;
+        this.height = options.height || defaultOptions.height;
+        this.enableMirroring = options.enableMirroring !== undefined ? options.enableMirroring : defaultOptions.enableMirroring;
+
         this.canvas = this;   ///point back to this instance!
         this.__canvas = document.createElement("canvas");
         this.__ctx = this.__canvas.getContext("2d");
@@ -208,8 +230,8 @@
         this.__root.setAttribute("version", 1.1);
         this.__root.setAttribute("xmlns", "http://www.w3.org/2000/svg");
         this.__root.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        this.__root.setAttribute("width", width);
-        this.__root.setAttribute("height", height);
+        this.__root.setAttribute("width", this.width);
+        this.__root.setAttribute("height", this.height);
 
         //make sure we don't generate the same ids in defs
         this.__ids = {};
@@ -338,7 +360,7 @@
      *                           If true, we attempt to find all named entities and encode it as a numeric entity.
      * @return serialized svg
      */
-    ctx.prototype.toString = function(fixNamedEntities) {
+    ctx.prototype.getSerializedSvg = function(fixNamedEntities) {
         var serialized = new XMLSerializer().serializeToString(this.__root),
             keys, i, key, value, regexp, xmlns;
 
@@ -927,5 +949,3 @@
     window.C2S = ctx;
 
 }());
-
-
