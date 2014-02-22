@@ -1,5 +1,5 @@
 /*!
- *  Canvas 2 Svg v1.0.1
+ *  Canvas 2 Svg v1.0.2
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
  *  Licensed under the MIT license:
@@ -311,7 +311,7 @@
      * @private
      */
     ctx.prototype.__applyStyleToCurrentElement = function(type) {
-        var keys = Object.keys(STYLES), i, style, value, id;
+        var keys = Object.keys(STYLES), i, style, value, id, regex, matches;
         for(i=0; i<keys.length; i++) {
             style = STYLES[keys[i]];
             value = this[keys[i]];
@@ -333,8 +333,16 @@
                     //gradient
                     this.__currentElement.setAttribute("fill", format("url(#{id})", {id:value.__root.getAttribute("id")}));
                 } else if(style.apply.indexOf(type)!==-1 && style.svg !== value) {
-                    //otherwise only update attribute if right type, and not svg default
-                    this.__currentElement.setAttribute(style.svgAttr, value);
+                    if((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf("rgba") !== -1) {
+                        //separate alpha value, since illustrator can't handle it
+                        regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
+                        matches = regex.exec(value);
+                        this.__currentElement.setAttribute(style.svgAttr, format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
+                        this.__currentElement.setAttribute(style.svgAttr+"-opacity", matches[4]);
+                    } else {
+                        //otherwise only update attribute if right type, and not svg default
+                        this.__currentElement.setAttribute(style.svgAttr, value);
+                    }
                 }
             }
         }

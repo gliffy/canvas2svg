@@ -122,4 +122,26 @@ describe("canvas2svg", function() {
       });
   });
 
+
+  describe("will split up rgba", function() {
+    //while browsers support rgba values for fill/stroke, this is not accepted in visio/illustrator
+    it("to fill and fill-opacity", function() {
+        var ctx = new C2S();
+        ctx.fillStyle="rgba(20,40,50,0.5)";
+        ctx.fillRect(100,100,100,100);
+        var svg = ctx.getSvg();
+        expect(svg.querySelector("rect").getAttribute("fill")).toBe("rgb(20,40,50)");
+        expect(svg.querySelector("rect").getAttribute("fill-opacity")).toBe("0.5");
+    });
+
+    it("to stroke and stroke-opacity", function() {
+        var ctx = new C2S();
+        ctx.strokeStyle="rgba(10,20,30,0.4)";
+        ctx.strokeRect(100,100,100,100);
+        var svg = ctx.getSvg();
+        expect(svg.querySelector("rect").getAttribute("stroke")).toBe("rgb(10,20,30)");
+        expect(svg.querySelector("rect").getAttribute("stroke-opacity")).toBe("0.4");
+    });
+  });
+
 });
