@@ -1,4 +1,4 @@
-/*!
+/*!!
  *  Canvas 2 Svg v1.0.2
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
@@ -10,7 +10,8 @@
  *
  *  Copyright (c) 2014 Gliffy Inc.
  */
-(function() {
+
+;(function() {
     "use strict";
 
     var STYLES, ctx, CanvasGradient, CanvasPattern, namedEntities;
@@ -194,17 +195,19 @@
      * height - height of your canvas (defaults to 500)
      * enableMirroring - enables canvas mirroring (get image data) (defaults to false)
      */
-    ctx = function(options) {
+    ctx = function(o) {
 
-        var defaultOptions = { width:500, height:500, enableMirroring : false };
+        var defaultOptions = { width:500, height:500, enableMirroring : false }, options;
 
         //keep support for this way of calling C2S: new C2S(width,height)
         if(arguments.length > 1) {
             options = defaultOptions;
             options.width = arguments[0];
             options.height = arguments[1];
-        } else if( !options ) {
+        } else if( !o ) {
             options = defaultOptions;
+        } else {
+            options = o;
         }
 
         if(!(this instanceof ctx)) {
