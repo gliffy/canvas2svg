@@ -1,5 +1,5 @@
 /*!!
- *  Canvas 2 Svg v1.0.2
+ *  Canvas 2 Svg v1.0.3
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
  *  Licensed under the MIT license:
@@ -190,7 +190,7 @@
 
     /**
      * The mock canvas context
-     * @param options - options include:
+     * @param o - options include:
      * width - width of your canvas (defaults to 500)
      * height - height of your canvas (defaults to 500)
      * enableMirroring - enables canvas mirroring (get image data) (defaults to false)
@@ -799,11 +799,18 @@
             startX = x+radius*Math.cos(startAngle),
             startY = y+radius*Math.sin(startAngle),
             sweepFlag = counterClockwise ? 0 : 1,
-            largeArcFlag;
+            largeArcFlag = 0,
+            diff = endAngle - startAngle;
+
+        // https://github.com/gliffy/canvas2svg/issues/4
+        if(diff < 0) {
+            diff += 2*Math.PI;
+        }
+
         if(counterClockwise) {
-            largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 0 : 1;
+            largeArcFlag = diff > Math.PI ? 0 : 1;
         } else {
-            largeArcFlag = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0;
+            largeArcFlag = diff > Math.PI ? 1 : 0;
         }
 
         this.moveTo(startX, startY);
