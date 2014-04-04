@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Canvas2Svg</title>
+    <script type="text/javascript" src="../canvas2svg.js"></script>
+    <style type="text/css">
+        canvas {
+            float:left;
+        }
+        #svg {
+            width: 500px;
+            height: 500px;
+            float: left;
+        }
+        textarea {
+            width:500px;
+            height:100px;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <div id="svg">
+</div>
+<textarea id="textarea">
+</textarea>
+<a href="#" id="render">Render</a>
+</div>
+<script type="text/javascript">
+    (function() {
+        "use strict";
+        document.getElementById("render").addEventListener("click", function(event){
+            event.preventDefault();
+            var ctx = document.getElementById("canvas").getContext("2d");
+            ctx.clearRect(0,0,500,500);
+            var c2s = new C2S(500,500);
+            var text = document.getElementById("textarea").value;
+            var drawFunction = new Function("ctx", text);
+            var svg = document.getElementById("svg");
+
+            drawFunction(ctx);
+            drawFunction(c2s);
+
+            if(svg.children.length>0) {
+                svg.removeChild(svg.children[0]);
+            }
+
+            svg.appendChild(c2s.getSvg());
+        } , false);
+
+
+    }());
+</script>
+</body>
+</html>
