@@ -117,11 +117,22 @@ describe("canvas2svg", function() {
           //passing in true will attempt to find all named entities and encode it as a numeric entity.
           var string = ctx.getSerializedSvg(true);
           expect(typeof string).toBe("string");
-          expect(string).toEqual('<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="500" height="500"><defs></defs><g><rect fill="red" stroke="none" x="100" y="100" width="100" height="100"></rect></g></svg>');
+          expect(string).toEqual('<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="500" height="500"><defs/><g><rect fill="red" stroke="none" x="100" y="100" width="100" height="100"/></g></svg>');
 
       });
   });
 
+  describe("it will generate ids", function() {
+
+      it("that start with a letter", function() {
+          var ctx = new C2S();
+          ctx.createRadialGradient(6E1, 6E1, 0.0, 6E1, 6E1, 5E1);
+          var svg = ctx.getSvg();
+          var id = svg.children[0].children[0].id;
+          var test = /^[A-Za-z]/.test(id);
+          expect(test).toEqual(true);
+      });
+  });
 
   describe("will split up rgba", function() {
     //while browsers support rgba values for fill/stroke, this is not accepted in visio/illustrator

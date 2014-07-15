@@ -1,5 +1,5 @@
 /*!!
- *  Canvas 2 Svg v1.0.3
+ *  Canvas 2 Svg v1.0.4
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
  *  Licensed under the MIT license:
@@ -31,7 +31,7 @@
         if (!holder) {
             throw new Error("cannot create a random attribute name for an undefined object");
         }
-        chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+        chars = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
         randomstring = "";
         do {
             randomstring = "";
