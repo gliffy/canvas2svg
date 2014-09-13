@@ -747,7 +747,8 @@
                 "text-decoration" : font.decoration,
                 "x" : x,
                 "y" : y,
-                "text-anchor": this.textAlign.replace("left", "start").replace("right", "end").replace("center", "middle")
+                "text-anchor": this.textAlign.replace("left", "start").replace("right", "end").replace("center", "middle"),
+                "dominant-baseline": this.textBaseline.replace("top", "text-after-edge").replace("top", "text-before-edge") //not 100% right + wont work in IE
             }, true);
 
         textElement.appendChild(document.createTextNode(text));
