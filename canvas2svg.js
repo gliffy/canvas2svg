@@ -746,7 +746,8 @@
                 "font-weight" : font.weight,
                 "text-decoration" : font.decoration,
                 "x" : x,
-                "y" : y
+                "y" : y,
+                "text-anchor": this.textAlign.replace("left", "start").replace("right", "end").replace("center", "middle")
             }, true);
 
         textElement.appendChild(document.createTextNode(text));
