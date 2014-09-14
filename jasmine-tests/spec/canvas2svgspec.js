@@ -38,11 +38,11 @@ describe("canvas2svg", function() {
             expect(ctx2.height).toEqual(400);
             expect(ctx2.enableMirroring).toEqual(false);
 
-            var ctx = C2S();
-            expect(ctx instanceof C2S).toBe(true);
-            expect(ctx.width).toEqual(500);
-            expect(ctx.height).toEqual(500);
-            expect(ctx.enableMirroring).toEqual(false);
+            var ctx3 = C2S();
+            expect(ctx3 instanceof C2S).toBe(true);
+            expect(ctx3.width).toEqual(500);
+            expect(ctx3.height).toEqual(500);
+            expect(ctx3.enableMirroring).toEqual(false);
 
         });
 
@@ -153,6 +153,16 @@ describe("canvas2svg", function() {
         expect(svg.querySelector("rect").getAttribute("stroke")).toBe("rgb(10,20,30)");
         expect(svg.querySelector("rect").getAttribute("stroke-opacity")).toBe("0.4");
     });
+  });
+
+  describe("supports path commands", function() {
+
+      it("and moveTo may be called without beginPath, but is not recommended", function() {
+          var ctx = new C2S();
+          ctx.moveTo(0,0);
+          ctx.lineTo(100,100);
+          ctx.stroke();
+      });
   });
 
 });

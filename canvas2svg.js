@@ -1,5 +1,5 @@
 /*!!
- *  Canvas 2 Svg v1.0.4
+ *  Canvas 2 Svg v1.0.5
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
  *  Licensed under the MIT license:
@@ -507,6 +507,9 @@
      * if the currentPathElement is not empty create a new path element
      */
     ctx.prototype.moveTo = function(x,y){
+        if(this.__currentElement.nodeName !== "path") {
+            this.beginPath();
+        }
         this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
     };
 
