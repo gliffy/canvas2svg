@@ -60,6 +60,7 @@
     
     //helper function to map canvas-textAlign to svg-textAnchor
     function getTextAnchor(textAlign) {
+        //TODO: support rtl languages
         var mapping = {"left":"start", "right":"end", "center":"middle", "start":"start", "end":"end"};
         return mapping[textAlign] || mapping.start;
     }

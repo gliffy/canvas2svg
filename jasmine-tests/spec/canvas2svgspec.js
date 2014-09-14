@@ -165,4 +165,67 @@ describe("canvas2svg", function() {
       });
   });
 
+  describe("supports text align", function() {
+
+      it("not specifying a value defaults to 'start'", function() {
+
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("start");
+
+      });
+
+      it("assuming ltr, left maps to 'start'", function() {
+
+          var ctx = new C2S();
+          ctx.textAlign = "left";
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("start");
+
+      });
+
+      it("assuming ltr, right maps to 'end'", function() {
+
+          var ctx = new C2S();
+          ctx.textAlign = "right";
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("end");
+
+      });
+
+      it("center maps to 'middle'", function() {
+
+          var ctx = new C2S();
+          ctx.textAlign = "center";
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("middle");
+
+      });
+
+      it("stores the proper values on save and restore", function() {
+         var ctx = new C2S();
+          ctx.textAlign = "center";
+          expect(ctx.textAlign).toBe("center");
+          ctx.save();
+          expect(ctx.textAlign).toBe("center");
+          ctx.textAlign = "right";
+          expect(ctx.textAlign).toBe("right");
+          ctx.restore();
+          expect(ctx.textAlign).toBe("center");
+      });
+
+  });
+
 });
