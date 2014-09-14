@@ -753,7 +753,8 @@
                 "text-decoration" : font.decoration,
                 "x" : x,
                 "y" : y,
-                "text-anchor": getTextAnchor(this.textAlign)
+                "text-anchor": getTextAnchor(this.textAlign),
+                "dominant-baseline": this.textBaseline.replace("top", "text-after-edge").replace("top", "text-before-edge") //not 100% right + wont work in IE
             }, true);
 
         textElement.appendChild(document.createTextNode(text));
@@ -788,6 +789,7 @@
      * @return {TextMetrics}
      */
     ctx.prototype.measureText = function(text){
+        this.__ctx.font = this.font;
         return this.__ctx.measureText(text);
     };
 
