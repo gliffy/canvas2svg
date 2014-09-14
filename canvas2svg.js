@@ -57,6 +57,12 @@
         lookup["\\xa0"] = '&#160;';
         return lookup;
     }
+    
+    //helper function to map canvas-textAlign to svg-textAnchor
+    function getTextAnchor(textAlign) {
+        var mapping = {"left":"start", "right":"end", "center":"middle", "start":"start", "end":"end"};
+        return mapping[textAlign] || mapping.start;
+    }
 
     // Unpack entities lookup where the numbers are in radix 32 to reduce the size
     // entity mapping courtesy of tinymce
@@ -749,7 +755,8 @@
                 "font-weight" : font.weight,
                 "text-decoration" : font.decoration,
                 "x" : x,
-                "y" : y
+                "y" : y,
+                "text-anchor": getTextAnchor(this.textAlign)
             }, true);
 
         textElement.appendChild(document.createTextNode(text));
