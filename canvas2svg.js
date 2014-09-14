@@ -792,6 +792,7 @@
      * @return {TextMetrics}
      */
     ctx.prototype.measureText = function(text){
+        this.__ctx.font = this.font;
         return this.__ctx.measureText(text);
     };
 
