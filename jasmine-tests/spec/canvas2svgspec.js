@@ -38,11 +38,11 @@ describe("canvas2svg", function() {
             expect(ctx2.height).toEqual(400);
             expect(ctx2.enableMirroring).toEqual(false);
 
-            var ctx = C2S();
-            expect(ctx instanceof C2S).toBe(true);
-            expect(ctx.width).toEqual(500);
-            expect(ctx.height).toEqual(500);
-            expect(ctx.enableMirroring).toEqual(false);
+            var ctx3 = C2S();
+            expect(ctx3 instanceof C2S).toBe(true);
+            expect(ctx3.width).toEqual(500);
+            expect(ctx3.height).toEqual(500);
+            expect(ctx3.enableMirroring).toEqual(false);
 
         });
 
@@ -153,6 +153,79 @@ describe("canvas2svg", function() {
         expect(svg.querySelector("rect").getAttribute("stroke")).toBe("rgb(10,20,30)");
         expect(svg.querySelector("rect").getAttribute("stroke-opacity")).toBe("0.4");
     });
+  });
+
+  describe("supports path commands", function() {
+
+      it("and moveTo may be called without beginPath, but is not recommended", function() {
+          var ctx = new C2S();
+          ctx.moveTo(0,0);
+          ctx.lineTo(100,100);
+          ctx.stroke();
+      });
+  });
+
+  describe("supports text align", function() {
+
+      it("not specifying a value defaults to 'start'", function() {
+
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("start");
+
+      });
+
+      it("assuming ltr, left maps to 'start'", function() {
+
+          var ctx = new C2S();
+          ctx.textAlign = "left";
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("start");
+
+      });
+
+      it("assuming ltr, right maps to 'end'", function() {
+
+          var ctx = new C2S();
+          ctx.textAlign = "right";
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("end");
+
+      });
+
+      it("center maps to 'middle'", function() {
+
+          var ctx = new C2S();
+          ctx.textAlign = "center";
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("text-anchor")).toBe("middle");
+
+      });
+
+      it("stores the proper values on save and restore", function() {
+         var ctx = new C2S();
+          ctx.textAlign = "center";
+          expect(ctx.textAlign).toBe("center");
+          ctx.save();
+          expect(ctx.textAlign).toBe("center");
+          ctx.textAlign = "right";
+          expect(ctx.textAlign).toBe("right");
+          ctx.restore();
+          expect(ctx.textAlign).toBe("center");
+      });
+
   });
 
 });
