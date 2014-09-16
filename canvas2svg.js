@@ -64,6 +64,13 @@
         var mapping = {"left":"start", "right":"end", "center":"middle", "start":"start", "end":"end"};
         return mapping[textAlign] || mapping.start;
     }
+    
+    //helper function to map canvas-textBaseline to svg-dominantBaseline
+    function getDominantBaseline(textBaseline) {
+        //INFO: not supported in all browsers
+        var mapping = {"alphabetic": "alphabetic", "hanging": "hanging", "top":"text-before-edge", "bottom":"text-after-edge", "middle":"central"};
+        return mapping[textBaseline] || mapping.start;
+    }
 
     // Unpack entities lookup where the numbers are in radix 32 to reduce the size
     // entity mapping courtesy of tinymce
@@ -757,7 +764,8 @@
                 "text-decoration" : font.decoration,
                 "x" : x,
                 "y" : y,
-                "text-anchor": getTextAnchor(this.textAlign)
+                "text-anchor": getTextAnchor(this.textAlign),
+                "dominant-baseline": getDominantBaseline(this.textBaseline)
             }, true);
 
         textElement.appendChild(document.createTextNode(text));
