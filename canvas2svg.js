@@ -1,5 +1,5 @@
 /*!!
- *  Canvas 2 Svg v1.0.4
+ *  Canvas 2 Svg v1.0.5
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
  *  Licensed under the MIT license:
@@ -56,6 +56,13 @@
         //FF and IE need to create a regex from hex values ie &nbsp; == \xa0
         lookup["\\xa0"] = '&#160;';
         return lookup;
+    }
+    
+    //helper function to map canvas-textAlign to svg-textAnchor
+    function getTextAnchor(textAlign) {
+        //TODO: support rtl languages
+        var mapping = {"left":"start", "right":"end", "center":"middle", "start":"start", "end":"end"};
+        return mapping[textAlign] || mapping.start;
     }
 
     // Unpack entities lookup where the numbers are in radix 32 to reduce the size
@@ -507,6 +514,9 @@
      * if the currentPathElement is not empty create a new path element
      */
     ctx.prototype.moveTo = function(x,y){
+        if(this.__currentElement.nodeName !== "path") {
+            this.beginPath();
+        }
         this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
     };
 
@@ -746,7 +756,8 @@
                 "font-weight" : font.weight,
                 "text-decoration" : font.decoration,
                 "x" : x,
-                "y" : y
+                "y" : y,
+                "text-anchor": getTextAnchor(this.textAlign)
             }, true);
 
         textElement.appendChild(document.createTextNode(text));
@@ -781,6 +792,7 @@
      * @return {TextMetrics}
      */
     ctx.prototype.measureText = function(text){
+        this.__ctx.font = this.font;
         return this.__ctx.measureText(text);
     };
 

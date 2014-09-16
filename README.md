@@ -33,6 +33,7 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.5 fixes for #5 and #6 (with contributions from KoKuToru)
 - v1.0.4 generate ids that start with a letter
 - v1.0.3 fixed #4 where largeArcFlag was set incorrectly in some cases 
 - v1.0.2 Split up rgba values set in fill/stroke to allow illustrator import support.
