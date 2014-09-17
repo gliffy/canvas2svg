@@ -69,7 +69,7 @@
     function getDominantBaseline(textBaseline) {
         //INFO: not supported in all browsers
         var mapping = {"alphabetic": "alphabetic", "hanging": "hanging", "top":"text-before-edge", "bottom":"text-after-edge", "middle":"central"};
-        return mapping[textBaseline] || mapping.start;
+        return mapping[textBaseline] || mapping.alphabetic;
     }
 
     // Unpack entities lookup where the numbers are in radix 32 to reduce the size
