@@ -228,4 +228,67 @@ describe("canvas2svg", function() {
 
   });
 
+  describe("supports text baseline", function() {
+
+      it("not specifying a value defaults to alphabetic", function() {
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("dominant-baseline")).toBe("alphabetic");
+      });
+
+      it("not specifying a valid value defaults to alphabetic", function() {
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.textBaseline = "werwerwer";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("dominant-baseline")).toBe("alphabetic");
+      });
+
+      it("hanging maps to hanging ", function() {
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.textBaseline = "hanging";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("dominant-baseline")).toBe("hanging");
+      });
+
+      it("top maps to text-before-edge ", function() {
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.textBaseline = "top";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("dominant-baseline")).toBe("text-before-edge");
+      });
+
+      it("bottom maps to text-after-edge ", function() {
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.textBaseline = "bottom";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("dominant-baseline")).toBe("text-after-edge");
+      });
+
+      it("middle maps to central ", function() {
+          var ctx = new C2S();
+          ctx.font = "normal 36px Times";
+          ctx.fillStyle = "#000000";
+          ctx.textBaseline = "middle";
+          ctx.fillText("A Text Example", 0, 50);
+          var svg = ctx.getSvg();
+          expect(svg.querySelector("text").getAttribute("dominant-baseline")).toBe("central");
+      });
+
+  });
+
 });
