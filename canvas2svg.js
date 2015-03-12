@@ -688,9 +688,19 @@
             size : fontPart[4] || '10px',
             family : fontPart[6] || 'sans-serif',
             weight: fontPart[3] || 'normal',
-            decoration : parts[2] || 'normal',
+            decoration : fontPart[2] || 'normal',
             href : null
         };
+        
+        //canvas doesn't support underline natively, but we can pass this attribute
+        if(this.__fontUnderline === "underline") {
+            data.decoration = "underline";
+        }
+        
+        //canvas also doesn't support linking, but we can pass this as well
+        if(this.__fontHref) {
+            data.href = this.__fontHref;
+        }
 
         return data;
     };
