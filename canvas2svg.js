@@ -681,49 +681,16 @@
      * @private
      */
     ctx.prototype.__parseFont = function() {
-        var font = this.font, parts, token, index = 0, data = {
-            style : "normal",
-            size : "10px",
-            family : "sans-serif",
-            weight: "normal",
-            decoration : "none", //underline | none
+        var regex = /^\s*(?=(?:(?:[-a-z]+\s*){0,2}(italic|oblique))?)(?=(?:(?:[-a-z]+\s*){0,2}(small-caps))?)(?=(?:(?:[-a-z]+\s*){0,2}(bold(?:er)?|lighter|[1-9]00))?)(?:(?:normal|\1|\2|\3)\s*){0,3}((?:xx?-)?(?:small|large)|medium|smaller|larger|[.\d]+(?:\%|in|[cem]m|ex|p[ctx]))(?:\s*\/\s*(normal|[.\d]+(?:\%|in|[cem]m|ex|p[ctx])))?\s*([-,\"\sa-z]+?)\s*$/i;
+        var fontPart = regex.exec( this.font );
+        var data = {
+            style : fontPart[1] || 'normal',
+            size : fontPart[4] || '10px',
+            family : fontPart[6] || 'sans-serif',
+            weight: fontPart[3] || 'normal',
+            decoration : parts[2] || 'normal',
             href : null
         };
-
-        //canvas doesn't support underline natively, but we can pass this attribute
-        if(this.__fontUnderline === "underline") {
-            data.decoration = "underline";
-        }
-
-        //canvas also doesn't support linking, but we can pass this as well
-        if(this.__fontHref) {
-            data.href = this.__fontHref;
-        }
-
-        parts = font.split(" ");
-        token = parts[index];
-
-        //text decoration
-        while(/italic|bold|normal/.test(token)) {
-            if(token === "bold") {
-                data.weight = token; //[normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | inherit]
-            } else {
-                data.style = token; //[normal / italic /oblique /inherit]
-            }
-            //advance to next token
-            index++;
-            token = parts[index];
-        }
-
-        //next token should be font size
-        if(/em|px|pt|%/.test(token)) {
-            data.size = token;
-            index++;
-        }
-
-        //font family?
-        parts.splice(0, index);
-        data.family = parts.join(" ");
 
         return data;
     };
