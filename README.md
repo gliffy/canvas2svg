@@ -33,6 +33,7 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.7 fixes for multiple transforms and fills and better text support from stafyniaksacha
 - v1.0.6 basic support for text baseline (contribution from KoKuToru)
 - v1.0.5 fixes for #5 and #6 (with contributions from KoKuToru)
 - v1.0.4 generate ids that start with a letter

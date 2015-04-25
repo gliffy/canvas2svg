@@ -444,6 +444,15 @@
      * @private
      */
     ctx.prototype.__addTransform = function(t) {
+
+        //if the current element has siblings, add another group
+        var parent = this.__closestGroupOrSvg();
+        if(parent.childNodes.length > 0) {
+            var group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            parent.appendChild(group);
+            this.__currentElement = group;
+        }
+
         var transform = this.__currentElement.getAttribute("transform");
         if(transform) {
             transform += " ";

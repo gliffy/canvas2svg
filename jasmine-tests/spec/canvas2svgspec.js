@@ -122,6 +122,55 @@ describe("canvas2svg", function() {
       });
   });
 
+    describe("with multiple transforms and fill/strokes", function() {
+
+        it("creates new groups", function() {
+            var ctx = new C2S();
+            ctx.translate(0, 20);
+            ctx.fillRect(0, 0, 10, 10);
+
+            ctx.translate(10, 20);
+            ctx.fillRect(0, 0, 10, 10);
+
+            ctx.translate(20, 20);
+            ctx.fillRect(0, 0, 10, 10);
+
+            var svg = ctx.getSvg();
+            var firstGroup = svg.querySelector("g");
+            expect(firstGroup.getAttribute("transform")).toEqual("translate(0,20)");
+            var secondGroup = firstGroup.querySelector("g");
+            expect(secondGroup.getAttribute("transform")).toEqual("translate(10,20)");
+            var thirdGroup = secondGroup.querySelector("g");
+            expect(thirdGroup.getAttribute("transform")).toEqual("translate(20,20)");
+
+        });
+
+        it("save and restore still works", function() {
+            var ctx = new C2S();
+
+            ctx.translate(0, 10);
+            ctx.fillRect(0, 0, 10, 10);
+
+            ctx.save();
+            ctx.translate(40, 40);
+            ctx.fillRect(0, 0, 10, 10);
+
+            ctx.restore();
+
+            ctx.translate(0, 10);
+            ctx.fillRect(0, 0, 10, 10);
+
+            var svg = ctx.getSvg();
+            var firstGroup = svg.querySelector("g");
+            expect(firstGroup.getAttribute("transform")).toEqual("translate(0,10)");
+            var secondGroup = firstGroup.childNodes[1];
+            expect(secondGroup.getAttribute("transform")).toEqual("translate(40,40)");
+            var thirdGroup = firstGroup.childNodes[2];
+            expect(thirdGroup.getAttribute("transform")).toEqual("translate(0,10)");
+
+        });
+    });
+
   describe("it will generate ids", function() {
 
       it("that start with a letter", function() {
