@@ -33,9 +33,13 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
-- v1.0.3 Transforms are now applied to new groups if a path or element has already been drawn in a given group.
+- v1.0.7 fixes for multiple transforms and fills and better text support from stafyniaksacha
+- v1.0.6 basic support for text baseline (contribution from KoKuToru)
+- v1.0.5 fixes for #5 and #6 (with contributions from KoKuToru)
+- v1.0.4 generate ids that start with a letter
+- v1.0.3 fixed #4 where largeArcFlag was set incorrectly in some cases
 - v1.0.2 Split up rgba values set in fill/stroke to allow illustrator import support.
-- v1.0.1 Allow C2S to be called as a function. https://github.com/gliffy/canvas2svg/issues/2 
+- v1.0.1 Allow C2S to be called as a function. https://github.com/gliffy/canvas2svg/issues/2
 - v1.0.0 Initial release
 
 Misc
