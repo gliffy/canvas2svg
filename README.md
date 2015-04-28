@@ -33,6 +33,7 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.3 Transforms are now applied to new groups if a path or element has already been drawn in a given group.
 - v1.0.2 Split up rgba values set in fill/stroke to allow illustrator import support.
 - v1.0.1 Allow C2S to be called as a function. https://github.com/gliffy/canvas2svg/issues/2 
 - v1.0.0 Initial release
