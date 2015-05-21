@@ -183,7 +183,7 @@
      * Adds a color stop to the gradient root
      */
     CanvasGradient.prototype.addColorStop = function(offset, color) {
-        var stop = document.createElementNS("http://www.w3.org/2000/svg", "stop"), regex, matches;
+        var stop = this.__createElement("stop"), regex, matches;
         stop.setAttribute("offset", offset);
         if(color.indexOf("rgba") !== -1) {
             //separate alpha value, since webkit can't handle it
@@ -268,6 +268,10 @@
      * @private
      */
     ctx.prototype.__createElement = function(elementName, properties, resetFill) {
+        if (typeof properties === "undefined") {
+            properties = {};
+        }
+
         var element = document.createElementNS("http://www.w3.org/2000/svg", elementName),
             keys = Object.keys(properties), i, key;
         if(resetFill) {
@@ -423,7 +427,7 @@
      * Will generate a group tag.
      */
     ctx.prototype.save = function() {
-        var group = document.createElementNS("http://www.w3.org/2000/svg", "g"), parent = this.__closestGroupOrSvg();
+        var group = this.__createElement("g"), parent = this.__closestGroupOrSvg();
         this.__groupStack.push(parent);
         parent.appendChild(group);
         this.__currentElement = group;
@@ -448,7 +452,7 @@
         //if the current element has siblings, add another group
         var parent = this.__closestGroupOrSvg();
         if(parent.childNodes.length > 0) {
-            var group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            var group = this.__createElement("g");
             parent.appendChild(group);
             this.__currentElement = group;
         }
@@ -723,7 +727,7 @@
      */
     ctx.prototype.__wrapTextLink = function(font, element) {
         if(font.href) {
-            var a = document.createElementNS("http://www.w3.org/2000/svg", "a");
+            var a = this.__createElement("a");
             a.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", font.href);
             a.appendChild(element);
             return a;
@@ -830,9 +834,9 @@
      */
     ctx.prototype.clip = function(){
         var group = this.__closestGroupOrSvg(),
-            clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath"),
+            clipPath = this.__createElement("clipPath"),
             id =  randomString(this.__ids),
-            newGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            newGroup = this.__createElement("g");
 
         group.removeChild(this.__currentElement);
         clipPath.setAttribute("id", id);
@@ -910,7 +914,7 @@
             this.__currentElement = currentElement;
         } else if(image.nodeName === "CANVAS" || image.nodeName === "IMG") {
             //canvas or image
-            svgImage = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            svgImage = this.__createElement("image");
             svgImage.setAttribute("width", dw);
             svgImage.setAttribute("height", dh);
             svgImage.setAttribute("preserveAspectRatio", "none");
