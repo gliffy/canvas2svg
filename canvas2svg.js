@@ -57,14 +57,14 @@
         lookup["\\xa0"] = '&#160;';
         return lookup;
     }
-    
+
     //helper function to map canvas-textAlign to svg-textAnchor
     function getTextAnchor(textAlign) {
         //TODO: support rtl languages
         var mapping = {"left":"start", "right":"end", "center":"middle", "start":"start", "end":"end"};
         return mapping[textAlign] || mapping.start;
     }
-    
+
     //helper function to map canvas-textBaseline to svg-dominantBaseline
     function getDominantBaseline(textBaseline) {
         //INFO: not supported in all browsers
@@ -260,7 +260,6 @@
         //also add a group child. the svg element can't use the transform attribute
         this.__currentElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
         this.__root.appendChild(this.__currentElement);
-
     };
 
     /**
@@ -504,6 +503,11 @@
      */
     ctx.prototype.beginPath = function(){
         var path, parent;
+
+        // Note that there is only one current default path, it is not part of the drawing state.
+        // See also: https://html.spec.whatwg.org/multipage/scripting.html#current-default-path
+        this.__currentDefaultPath = "";
+
         path = this.__createElement("path", {}, true);
         parent = this.__closestGroupOrSvg();
         parent.appendChild(path);
@@ -511,22 +515,25 @@
     };
 
     /**
+     * Helper function to apply currentDefaultPath to current path element
+     * @private
+     */
+    ctx.prototype.__applyCurrentDefaultPath = function() {
+        if(this.__currentElement.nodeName === "path") {
+            var d = this.__currentDefaultPath;
+            this.__currentElement.setAttribute("d", d);
+        } else {
+            throw new Error("Attempted to apply path command to node " + this.__currentElement.nodeName);
+        }
+    };
+
+    /**
      * Helper function to add path command
      * @private
      */
     ctx.prototype.__addPathCommand = function(command){
-        if(this.__currentElement.nodeName === "path") {
-            var d = this.__currentElement.getAttribute("d");
-            if(d) {
-                d += " ";
-            } else {
-                d = "";
-            }
-            d += command;
-            this.__currentElement.setAttribute("d", d);
-        } else {
-            throw new Error("Attempted to add path command to node " + this.__currentElement.nodeName);
-        }
+        this.__currentDefaultPath += " ";
+        this.__currentDefaultPath += command;
     };
 
     /**
@@ -573,6 +580,7 @@
      * Sets the stroke property on the current element
      */
     ctx.prototype.stroke = function(){
+        this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("stroke");
     };
 
@@ -580,6 +588,7 @@
      * Sets fill properties on the current element
      */
     ctx.prototype.fill = function(){
+        this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("fill");
     };
 
@@ -704,12 +713,12 @@
             decoration : fontPart[2] || 'normal',
             href : null
         };
-        
+
         //canvas doesn't support underline natively, but we can pass this attribute
         if(this.__fontUnderline === "underline") {
             data.decoration = "underline";
         }
-        
+
         //canvas also doesn't support linking, but we can pass this as well
         if(this.__fontHref) {
             data.href = this.__fontHref;
