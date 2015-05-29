@@ -33,6 +33,7 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.9 use currentDefaultPath instead of <path>'s d attribute, fixes stroke's different behavior in SVG and canvas.
 - v1.0.8 reusing __createElement and adding a properties undefined check
 - v1.0.7 fixes for multiple transforms and fills and better text support from stafyniaksacha
 - v1.0.6 basic support for text baseline (contribution from KoKuToru)
