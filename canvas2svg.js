@@ -832,7 +832,7 @@
             largeArcFlag = diff > Math.PI ? 1 : 0;
         }
 
-        this.moveTo(startX, startY);
+        this.lineTo(startX, startY);
         this.__addPathCommand(format("A {rx} {ry} {xAxisRotation} {largeArcFlag} {sweepFlag} {endX} {endY}",
             {rx:radius, ry:radius, xAxisRotation:0, largeArcFlag:largeArcFlag, sweepFlag:sweepFlag, endX:endX, endY:endY}));
 
