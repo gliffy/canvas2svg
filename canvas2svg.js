@@ -580,6 +580,9 @@
      * Sets the stroke property on the current element
      */
     ctx.prototype.stroke = function(){
+        if(this.__currentElement.nodeName === "path") {
+            this.__currentElement.setAttribute("paint-order", "fill stroke markers");
+        }
         this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("stroke");
     };
@@ -588,6 +591,9 @@
      * Sets fill properties on the current element
      */
     ctx.prototype.fill = function(){
+        if(this.__currentElement.nodeName === "path") {
+            this.__currentElement.setAttribute("paint-order", "stroke fill markers");
+        }
         this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("fill");
     };
