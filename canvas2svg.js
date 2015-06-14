@@ -1,5 +1,5 @@
 /*!!
- *  Canvas 2 Svg v1.0.13
+ *  Canvas 2 Svg v1.0.14
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
  *  Licensed under the MIT license:
@@ -70,6 +70,29 @@
         //INFO: not supported in all browsers
         var mapping = {"alphabetic": "alphabetic", "hanging": "hanging", "top":"text-before-edge", "bottom":"text-after-edge", "middle":"central"};
         return mapping[textBaseline] || mapping.alphabetic;
+    }
+
+    /**
+     * Creates the specified svg element
+     * @private
+     */
+    function createElement(elementName, properties, resetFill) {
+        if (typeof properties === "undefined") {
+            properties = {};
+        }
+
+        var element = document.createElementNS("http://www.w3.org/2000/svg", elementName),
+            keys = Object.keys(properties), i, key;
+        if(resetFill) {
+            //if fill or stroke is not specified, the svg element should not display. By default SVG's fill is black.
+            element.setAttribute("fill", "none");
+            element.setAttribute("stroke", "none");
+        }
+        for(i=0; i<keys.length; i++) {
+            key = keys[i];
+            element.setAttribute(key, properties[key]);
+        }
+        return element;
     }
 
     // Unpack entities lookup where the numbers are in radix 32 to reduce the size
@@ -183,7 +206,7 @@
      * Adds a color stop to the gradient root
      */
     CanvasGradient.prototype.addColorStop = function(offset, color) {
-        var stop = this.__createElement("stop"), regex, matches;
+        var stop = createElement("stop"), regex, matches;
         stop.setAttribute("offset", offset);
         if(color.indexOf("rgba") !== -1) {
             //separate alpha value, since webkit can't handle it
@@ -260,29 +283,6 @@
         //also add a group child. the svg element can't use the transform attribute
         this.__currentElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
         this.__root.appendChild(this.__currentElement);
-    };
-
-    /**
-     * Creates the specified svg element
-     * @private
-     */
-    ctx.prototype.__createElement = function(elementName, properties, resetFill) {
-        if (typeof properties === "undefined") {
-            properties = {};
-        }
-
-        var element = document.createElementNS("http://www.w3.org/2000/svg", elementName),
-            keys = Object.keys(properties), i, key;
-        if(resetFill) {
-            //if fill or stroke is not specified, the svg element should not display. By default SVG's fill is black.
-            element.setAttribute("fill", "none");
-            element.setAttribute("stroke", "none");
-        }
-        for(i=0; i<keys.length; i++) {
-            key = keys[i];
-            element.setAttribute(key, properties[key]);
-        }
-        return element;
     };
 
     /**
@@ -426,7 +426,7 @@
      * Will generate a group tag.
      */
     ctx.prototype.save = function() {
-        var group = this.__createElement("g"), parent = this.__closestGroupOrSvg();
+        var group = createElement("g"), parent = this.__closestGroupOrSvg();
         this.__groupStack.push(parent);
         parent.appendChild(group);
         this.__currentElement = group;
@@ -451,7 +451,7 @@
         //if the current element has siblings, add another group
         var parent = this.__closestGroupOrSvg();
         if(parent.childNodes.length > 0) {
-            var group = this.__createElement("g");
+            var group = createElement("g");
             parent.appendChild(group);
             this.__currentElement = group;
         }
@@ -509,7 +509,7 @@
         this.__currentDefaultPath = "";
         this.__currentPosition = {};
 
-        path = this.__createElement("path", {}, true);
+        path = createElement("path", {}, true);
         parent = this.__closestGroupOrSvg();
         parent.appendChild(path);
         this.__currentElement = path;
@@ -732,7 +732,7 @@
      */
     ctx.prototype.fillRect = function(x, y, width, height){
         var rect, parent;
-        rect = this.__createElement("rect", {
+        rect = createElement("rect", {
             x : x,
             y : y,
             width : width,
@@ -753,7 +753,7 @@
      */
     ctx.prototype.strokeRect = function(x, y, width, height){
         var rect, parent;
-        rect = this.__createElement("rect", {
+        rect = createElement("rect", {
             x : x,
             y : y,
             width : width,
@@ -771,7 +771,7 @@
      */
     ctx.prototype.clearRect = function(x, y, width, height) {
         var rect, parent = this.__closestGroupOrSvg();
-        rect = this.__createElement("rect", {
+        rect = createElement("rect", {
             x : x,
             y : y,
             width : width,
@@ -786,7 +786,7 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createLinearGradient = function(x1, y1, x2, y2){
-        var grad = this.__createElement("linearGradient", {
+        var grad = createElement("linearGradient", {
             id : randomString(this.__ids),
             x1 : x1+"px",
             x2 : x2+"px",
@@ -803,7 +803,7 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createRadialGradient = function(x0, y0, r0, x1, y1, r1){
-        var grad = this.__createElement("radialGradient", {
+        var grad = createElement("radialGradient", {
             id : randomString(this.__ids),
             cx : x1+"px",
             cy : y1+"px",
@@ -855,7 +855,7 @@
      */
     ctx.prototype.__wrapTextLink = function(font, element) {
         if(font.href) {
-            var a = this.__createElement("a");
+            var a = createElement("a");
             a.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", font.href);
             a.appendChild(element);
             return a;
@@ -874,7 +874,7 @@
     ctx.prototype.__applyText = function(text, x, y, action) {
         var font = this.__parseFont(),
             parent = this.__closestGroupOrSvg(),
-            textElement = this.__createElement("text", {
+            textElement = createElement("text", {
                 "font-family" : font.family,
                 "font-size" : font.size,
                 "font-style" : font.style,
@@ -963,9 +963,9 @@
      */
     ctx.prototype.clip = function(){
         var group = this.__closestGroupOrSvg(),
-            clipPath = this.__createElement("clipPath"),
+            clipPath = createElement("clipPath"),
             id =  randomString(this.__ids),
-            newGroup = this.__createElement("g");
+            newGroup = createElement("g");
 
         group.removeChild(this.__currentElement);
         clipPath.setAttribute("id", id);
@@ -1043,7 +1043,7 @@
             this.__currentElement = currentElement;
         } else if(image.nodeName === "CANVAS" || image.nodeName === "IMG") {
             //canvas or image
-            svgImage = this.__createElement("image");
+            svgImage = createElement("image");
             svgImage.setAttribute("width", dw);
             svgImage.setAttribute("height", dh);
             svgImage.setAttribute("preserveAspectRatio", "none");

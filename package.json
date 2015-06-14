@@ -1,0 +1,34 @@
+{
+  "name": "canvas2svg",
+  "version": "1.0.14",
+  "description": "canvas2svg",
+  "main": "canvas2svg.js",
+  "homepage": "http://gliffy.github.io/canvas2svg/",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/karma start --browsers Firefox --single-run"
+  },
+  "keywords": [
+    "canvas",
+    "svg",
+    "canvas2svg"
+  ],
+  "author": "Kerry Liu",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "chai": "^2.1.1",
+    "cheerio": "^0.19.0",
+    "gulp": "^3.9.0",
+    "karma": "^0.12.36",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^0.1.12",
+    "karma-firefox-launcher": "^0.1.6",
+    "karma-mocha": "^0.1.10",
+    "karma-mocha-reporter": "^1.0.2",
+    "mocha": "^2.2.5",
+    "resemblejs": "^1.2.1"
+  }
+}
