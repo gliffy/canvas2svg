@@ -33,6 +33,7 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.11 call lineTo instead moveTo in ctx.arc, fixes closePath issue and straight line issue
 - v1.0.10 when lineTo called, use M instead of L unless subpath exists
 - v1.0.9 use currentDefaultPath instead of <path>'s d attribute, fixes stroke's different behavior in SVG and canvas.
 - v1.0.8 reusing __createElement and adding a properties undefined check
