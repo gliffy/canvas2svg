@@ -33,6 +33,7 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.13 set paint order before stroke and fill to make them behavior like canvas
 - v1.0.12 Implementation of ctx.prototype.arcTo.
 - v1.0.11 call lineTo instead moveTo in ctx.arc, fixes closePath issue and straight line issue
 - v1.0.10 when lineTo called, use M instead of L unless subpath exists
