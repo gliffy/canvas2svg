@@ -1,5 +1,5 @@
 /*!!
- *  Canvas 2 Svg v1.0.12
+ *  Canvas 2 Svg v1.0.13
  *  A low level canvas to SVG converter. Uses a mock canvas context to build an SVG document.
  *
  *  Licensed under the MIT license:
