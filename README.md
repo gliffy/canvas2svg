@@ -33,6 +33,8 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.15 Setup travis, add testharness and debug playground, and fix regression for __createElement refactor
+- v1.0.14 bugfix for gradients, move __createElement to scoped createElement function, so all classes have access.
 - v1.0.13 set paint order before stroke and fill to make them behavior like canvas
 - v1.0.12 Implementation of ctx.prototype.arcTo.
 - v1.0.11 call lineTo instead moveTo in ctx.arc, fixes closePath issue and straight line issue
