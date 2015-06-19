@@ -1,0 +1,15 @@
+#canvas,
+#svg {
+    border: 1px solid #CCC;
+}
+#svg {
+    width: 460px;
+    height: 460px;
+    overflow: hidden;
+}
+
+.container,
+.try {
+    margin-top: 20px;
+}
+
