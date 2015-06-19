@@ -1,4 +1,4 @@
-Canvas2Svg [![Build Status](https://travis-ci.org/gwwar/canvas2svg.svg?branch=master)](https://travis-ci.org/gwwar/canvas2svg)
+Canvas2Svg [![Build Status](https://travis-ci.org/gliffy/canvas2svg.svg?branch=master)](https://travis-ci.org/gliffy/canvas2svg)
 ==========
 This library turns your Canvas into SVG using javascript. In other words, this library lets you build an SVG document 
 using the canvas api. Why use it?
@@ -82,6 +82,7 @@ If you find a bug, or want to add functionality, please add a new test case and 
 
 Updates
 ==========
+- v1.0.15 Setup travis, add testharness and debug playground, and fix regression for __createElement refactor
 - v1.0.14 bugfix for gradients, move __createElement to scoped createElement function, so all classes have access. 
 - v1.0.13 set paint order before stroke and fill to make them behavior like canvas
 - v1.0.12 Implementation of ctx.prototype.arcTo.
