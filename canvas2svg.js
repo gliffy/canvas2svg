@@ -926,6 +926,10 @@
      *  Arc command!
      */
     ctx.prototype.arc = function(x, y, radius, startAngle, endAngle, counterClockwise) {
+        // in canvas no circle is drawn if no angle is provided.
+        if (startAngle === endAngle) {
+            return;
+        }
         startAngle = startAngle % (2*Math.PI);
         endAngle = endAngle % (2*Math.PI);
         if(startAngle === endAngle) {
