@@ -46,6 +46,12 @@ describe('canvas2svg', function() {
 
         });
 
+        it("can be created on another document", function () {
+            var otherDoc = document.implementation.createHTMLDocument();
+            var ctx = C2S({document: otherDoc});
+            expect(ctx.getSvg().ownerDocument).to.equal(otherDoc);
+        });
+
     });
 
     describe("can export to", function() {
