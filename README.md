@@ -100,6 +100,7 @@ N.B. You may not need node-canvas for some simple operations when using jsdom >=
 
 Updates
 ==========
+- v1.0.16 Add npm publishing support, bower file and optimize for arcs with no angles.
 - v1.0.15 Setup travis, add testharness and debug playground, and fix regression for __createElement refactor
 - v1.0.14 bugfix for gradients, move __createElement to scoped createElement function, so all classes have access. 
 - v1.0.13 set paint order before stroke and fill to make them behavior like canvas
