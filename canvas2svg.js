@@ -72,29 +72,6 @@
         return mapping[textBaseline] || mapping.alphabetic;
     }
 
-    /**
-     * Creates the specified svg element
-     * @private
-     */
-    function createElement(elementName, properties, resetFill) {
-        if (typeof properties === "undefined") {
-            properties = {};
-        }
-
-        var element = document.createElementNS("http://www.w3.org/2000/svg", elementName),
-            keys = Object.keys(properties), i, key;
-        if(resetFill) {
-            //if fill or stroke is not specified, the svg element should not display. By default SVG's fill is black.
-            element.setAttribute("fill", "none");
-            element.setAttribute("stroke", "none");
-        }
-        for(i=0; i<keys.length; i++) {
-            key = keys[i];
-            element.setAttribute(key, properties[key]);
-        }
-        return element;
-    }
-
     // Unpack entities lookup where the numbers are in radix 32 to reduce the size
     // entity mapping courtesy of tinymce
     namedEntities = createNamedToNumberedLookup(
@@ -198,15 +175,16 @@
      * @param gradientNode - reference to the gradient
      * @constructor
      */
-    CanvasGradient = function(gradientNode) {
+    CanvasGradient = function(gradientNode, ctx) {
         this.__root = gradientNode;
+        this.__ctx = ctx;
     };
 
     /**
      * Adds a color stop to the gradient root
      */
     CanvasGradient.prototype.addColorStop = function(offset, color) {
-        var stop = createElement("stop"), regex, matches;
+        var stop = this.__ctx.__createElement("stop"), regex, matches;
         stop.setAttribute("offset", offset);
         if(color.indexOf("rgba") !== -1) {
             //separate alpha value, since webkit can't handle it
@@ -231,10 +209,11 @@
      * width - width of your canvas (defaults to 500)
      * height - height of your canvas (defaults to 500)
      * enableMirroring - enables canvas mirroring (get image data) (defaults to false)
+     * document - the document object (defaults to the current document)
      */
     ctx = function(o) {
 
-        var defaultOptions = { width:500, height:500, enableMirroring : false }, options;
+        var defaultOptions = { width:500, height:500, enableMirroring : false}, options;
 
         //keep support for this way of calling C2S: new C2S(width,height)
         if(arguments.length > 1) {
@@ -258,7 +237,8 @@
         this.enableMirroring = options.enableMirroring !== undefined ? options.enableMirroring : defaultOptions.enableMirroring;
 
         this.canvas = this;   ///point back to this instance!
-        this.__canvas = document.createElement("canvas");
+        this.__document = options.document || document;
+        this.__canvas = this.__document.createElement("canvas");
         this.__ctx = this.__canvas.getContext("2d");
 
         this.__setDefaultStyles();
@@ -266,7 +246,7 @@
         this.__groupStack = [];
 
         //the root svg element
-        this.__root = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        this.__root = this.__document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this.__root.setAttribute("version", 1.1);
         this.__root.setAttribute("xmlns", "http://www.w3.org/2000/svg");
         this.__root.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
@@ -277,12 +257,36 @@
         this.__ids = {};
 
         //defs tag
-        this.__defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        this.__defs = this.__document.createElementNS("http://www.w3.org/2000/svg", "defs");
         this.__root.appendChild(this.__defs);
 
         //also add a group child. the svg element can't use the transform attribute
-        this.__currentElement = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        this.__currentElement = this.__document.createElementNS("http://www.w3.org/2000/svg", "g");
         this.__root.appendChild(this.__currentElement);
+    };
+
+
+    /**
+     * Creates the specified svg element
+     * @private
+     */
+    ctx.prototype.__createElement = function (elementName, properties, resetFill) {
+        if (typeof properties === "undefined") {
+            properties = {};
+        }
+
+        var element = this.__document.createElementNS("http://www.w3.org/2000/svg", elementName),
+            keys = Object.keys(properties), i, key;
+        if(resetFill) {
+            //if fill or stroke is not specified, the svg element should not display. By default SVG's fill is black.
+            element.setAttribute("fill", "none");
+            element.setAttribute("stroke", "none");
+        }
+        for(i=0; i<keys.length; i++) {
+            key = keys[i];
+            element.setAttribute(key, properties[key]);
+        }
+        return element;
     };
 
     /**
@@ -426,7 +430,7 @@
      * Will generate a group tag.
      */
     ctx.prototype.save = function() {
-        var group = createElement("g"), parent = this.__closestGroupOrSvg();
+        var group = this.__createElement("g"), parent = this.__closestGroupOrSvg();
         this.__groupStack.push(parent);
         parent.appendChild(group);
         this.__currentElement = group;
@@ -451,7 +455,7 @@
         //if the current element has siblings, add another group
         var parent = this.__closestGroupOrSvg();
         if(parent.childNodes.length > 0) {
-            var group = createElement("g");
+            var group = this.__createElement("g");
             parent.appendChild(group);
             this.__currentElement = group;
         }
@@ -509,7 +513,7 @@
         this.__currentDefaultPath = "";
         this.__currentPosition = {};
 
-        path = createElement("path", {}, true);
+        path = this.__createElement("path", {}, true);
         parent = this.__closestGroupOrSvg();
         parent.appendChild(path);
         this.__currentElement = path;
@@ -732,7 +736,7 @@
      */
     ctx.prototype.fillRect = function(x, y, width, height){
         var rect, parent;
-        rect = createElement("rect", {
+        rect = this.__createElement("rect", {
             x : x,
             y : y,
             width : width,
@@ -753,7 +757,7 @@
      */
     ctx.prototype.strokeRect = function(x, y, width, height){
         var rect, parent;
-        rect = createElement("rect", {
+        rect = this.__createElement("rect", {
             x : x,
             y : y,
             width : width,
@@ -771,7 +775,7 @@
      */
     ctx.prototype.clearRect = function(x, y, width, height) {
         var rect, parent = this.__closestGroupOrSvg();
-        rect = createElement("rect", {
+        rect = this.__createElement("rect", {
             x : x,
             y : y,
             width : width,
@@ -786,7 +790,7 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createLinearGradient = function(x1, y1, x2, y2){
-        var grad = createElement("linearGradient", {
+        var grad = this.__createElement("linearGradient", {
             id : randomString(this.__ids),
             x1 : x1+"px",
             x2 : x2+"px",
@@ -795,7 +799,7 @@
             "gradientUnits" : "userSpaceOnUse"
         }, false);
         this.__defs.appendChild(grad);
-        return new CanvasGradient(grad);
+        return new CanvasGradient(grad, this);
     };
 
     /**
@@ -803,7 +807,7 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createRadialGradient = function(x0, y0, r0, x1, y1, r1){
-        var grad = createElement("radialGradient", {
+        var grad = this.__createElement("radialGradient", {
             id : randomString(this.__ids),
             cx : x1+"px",
             cy : y1+"px",
@@ -813,7 +817,7 @@
             "gradientUnits" : "userSpaceOnUse"
         }, false);
         this.__defs.appendChild(grad);
-        return new CanvasGradient(grad);
+        return new CanvasGradient(grad, this);
 
     };
 
@@ -855,7 +859,7 @@
      */
     ctx.prototype.__wrapTextLink = function(font, element) {
         if(font.href) {
-            var a = createElement("a");
+            var a = this.__createElement("a");
             a.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", font.href);
             a.appendChild(element);
             return a;
@@ -874,7 +878,7 @@
     ctx.prototype.__applyText = function(text, x, y, action) {
         var font = this.__parseFont(),
             parent = this.__closestGroupOrSvg(),
-            textElement = createElement("text", {
+            textElement = this.__createElement("text", {
                 "font-family" : font.family,
                 "font-size" : font.size,
                 "font-style" : font.style,
@@ -886,7 +890,7 @@
                 "dominant-baseline": getDominantBaseline(this.textBaseline)
             }, true);
 
-        textElement.appendChild(document.createTextNode(text));
+        textElement.appendChild(this.__document.createTextNode(text));
         this.__currentElement = textElement;
         this.__applyStyleToCurrentElement(action);
         parent.appendChild(this.__wrapTextLink(font,textElement));
@@ -963,9 +967,9 @@
      */
     ctx.prototype.clip = function(){
         var group = this.__closestGroupOrSvg(),
-            clipPath = createElement("clipPath"),
+            clipPath = this.__createElement("clipPath"),
             id =  randomString(this.__ids),
-            newGroup = createElement("g");
+            newGroup = this.__createElement("g");
 
         group.removeChild(this.__currentElement);
         clipPath.setAttribute("id", id);
@@ -1043,14 +1047,14 @@
             this.__currentElement = currentElement;
         } else if(image.nodeName === "CANVAS" || image.nodeName === "IMG") {
             //canvas or image
-            svgImage = createElement("image");
+            svgImage = this.__createElement("image");
             svgImage.setAttribute("width", dw);
             svgImage.setAttribute("height", dh);
             svgImage.setAttribute("preserveAspectRatio", "none");
 
             if(sx || sy || sw !== image.width || sh !== image.height) {
                 //crop the image using a temporary canvas
-                canvas = document.createElement("canvas");
+                canvas = this.__document.createElement("canvas");
                 canvas.width = dw;
                 canvas.height = dh;
                 context = canvas.getContext("2d");
@@ -1071,13 +1075,13 @@
      * Generates a pattern tag
      */
     ctx.prototype.createPattern = function(image, repetition){
-        var pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern"), id = randomString(this.__ids),
+        var pattern = this.__document.createElementNS("http://www.w3.org/2000/svg", "pattern"), id = randomString(this.__ids),
             img;
         pattern.setAttribute("id", id);
         pattern.setAttribute("width", image.width);
         pattern.setAttribute("height", image.height);
         if(image.nodeName === "CANVAS" || image.nodeName === "IMG") {
-            img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            img = this.__document.createElementNS("http://www.w3.org/2000/svg", "image");
             img.setAttribute("width", image.width);
             img.setAttribute("height", image.height);
             img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
@@ -1102,6 +1106,13 @@
     ctx.prototype.setTransform = function(){};
 
     //add options for alternative namespace
-    window.C2S = ctx;
+    if (typeof window === "object") {
+        window.C2S = ctx;
+    }
+
+    // CommonJS/Browserify
+    if (typeof module === "object" && typeof module.exports === "object") {
+        module.exports = ctx;
+    }
 
 }());

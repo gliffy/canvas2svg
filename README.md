@@ -80,6 +80,24 @@ You should now be able to select your new example from playground.html or see it
 
 If you find a bug, or want to add functionality, please add a new test case and include it with your pull request.
 
+Using with node.js
+==================
+
+You can use `canvas2svg` with node.js using [jsdom](https://github.com/tmpvar/jsdom) with [node-canvas](https://github.com/Automattic/node-canvas). To do this first create a new document object, and then create a new instance of `C2S` based on that document:
+
+```javascript
+var canvas = require('canvas'),
+    jsdom = require('jsdom'),
+    C2S = require('canvas2svg');
+
+var document = jsdom.jsdom();
+var ctx = new C2S({document: document});
+
+// ... drawing code goes here ...
+```
+
+N.B. You may not need node-canvas for some simple operations when using jsdom >= 6.3.0, but it's still recommended that you install it.
+
 Updates
 ==========
 - v1.0.15 Setup travis, add testharness and debug playground, and fix regression for __createElement refactor
@@ -102,6 +120,17 @@ Updates
 Misc
 ==========
 Some canvas 2d context methods are not implemented yet. Watch out for setTransform and arcTo.
+
+Releasing
+=========
+
+To release a new version:
+
+* Run `gulp bump` to update the version number
+* Add a new entry to the [Updates](#Updates) table
+* `git commit -am v1.0.xx`
+* `git push`
+* `npm publish`
 
 License
 ==========
