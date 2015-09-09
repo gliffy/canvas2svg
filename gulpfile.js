@@ -4,6 +4,7 @@ var gulp = require('gulp');
 var fs = require('fs');
 var path = require('path');
 var cheerio = require('cheerio');
+var bump = require('gulp-bump');
 
 
 function updateExample(filename) {
@@ -26,6 +27,12 @@ function updateExample(filename) {
 gulp.task('update_examples', function() {
     updateExample('test/playground.html');
     updateExample('test/testrunner.html');
+});
+
+gulp.task('bump', function() {
+    gulp.src(["./package.json", "./bower.json"])
+    .pipe(bump({type:'patch'}))
+    .pipe(gulp.dest('./'));
 });
 
 gulp.task('default', ['update_examples']);

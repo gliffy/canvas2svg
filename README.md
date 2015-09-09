@@ -121,6 +121,17 @@ Misc
 ==========
 Some canvas 2d context methods are not implemented yet. Watch out for setTransform and arcTo.
 
+Releasing
+=========
+
+To release a new version:
+
+* Run `gulp bump` to update the version number
+* Add a new entry to the [Updates](#Updates) table
+* `git commit -am v1.0.xx`
+* `git push`
+* `npm publish`
+
 License
 ==========
 This library is licensed under the MIT license.
