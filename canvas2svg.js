@@ -1112,7 +1112,8 @@
     ctx.prototype.putImageData = function(){};
     ctx.prototype.globalCompositeOperation = function(){};
     ctx.prototype.setTransform = function(){};
-
+    ctx.prototype.setLineDash = function(){};
+    
     //add options for alternative namespace
     if (typeof window === "object") {
         window.C2S = ctx;
