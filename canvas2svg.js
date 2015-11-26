@@ -167,6 +167,12 @@
         },
         "textBaseline":{
             canvas : "alphabetic"
+        },
+        "lineDash" : {
+            svgAttr : "stroke-dasharray",
+            canvas : [],
+            svg : null,
+            apply : "stroke"
         }
     };
 
@@ -1102,7 +1108,15 @@
         }
         return new CanvasPattern(pattern, this);
     };
-
+    
+    ctx.prototype.setLineDash = function(dashArray) {
+        if (dashArray && dashArray.length > 0) {
+            this.lineDash = dashArray.join(",");
+        } else {
+            this.lineDash = null;
+        }
+    };
+    
     /**
      * Not yet implemented
      */
@@ -1112,7 +1126,6 @@
     ctx.prototype.putImageData = function(){};
     ctx.prototype.globalCompositeOperation = function(){};
     ctx.prototype.setTransform = function(){};
-    ctx.prototype.setLineDash = function(){};
     
     //add options for alternative namespace
     if (typeof window === "object") {
