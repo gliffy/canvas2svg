@@ -167,6 +167,12 @@
         },
         "textBaseline":{
             canvas : "alphabetic"
+        },
+        "lineDash" : {
+            svgAttr : "stroke-dasharray",
+            canvas : [],
+            svg : null,
+            apply : "stroke"
         }
     };
 
@@ -1038,17 +1044,21 @@
             //canvas2svg mock canvas context. In the future we may want to clone nodes instead.
             //also I'm currently ignoring dw, dh, sw, sh, sx, sy for a mock context.
             svg = image.getSvg();
-            defs = svg.childNodes[0];
-            while(defs.childNodes.length) {
-                id = defs.childNodes[0].getAttribute("id");
-                this.__ids[id] = id;
-                this.__defs.appendChild(defs.childNodes[0]);
+            if (svg.childNodes && svg.childNodes.length > 1) {
+                defs = svg.childNodes[0];
+                while(defs.childNodes.length) {
+                    id = defs.childNodes[0].getAttribute("id");
+                    this.__ids[id] = id;
+                    this.__defs.appendChild(defs.childNodes[0]);
+                }
+                group = svg.childNodes[1];
+                if (group) {
+                    parent.appendChild(group);
+                    this.__currentElement = group;
+                    this.translate(dx, dy);
+                    this.__currentElement = currentElement;
+                }
             }
-            group = svg.childNodes[1];
-            parent.appendChild(group);
-            this.__currentElement = group;
-            this.translate(dx, dy);
-            this.__currentElement = currentElement;
         } else if(image.nodeName === "CANVAS" || image.nodeName === "IMG") {
             //canvas or image
             svgImage = this.__createElement("image");
@@ -1098,7 +1108,15 @@
         }
         return new CanvasPattern(pattern, this);
     };
-
+    
+    ctx.prototype.setLineDash = function(dashArray) {
+        if (dashArray && dashArray.length > 0) {
+            this.lineDash = dashArray.join(",");
+        } else {
+            this.lineDash = null;
+        }
+    };
+    
     /**
      * Not yet implemented
      */
@@ -1108,7 +1126,7 @@
     ctx.prototype.putImageData = function(){};
     ctx.prototype.globalCompositeOperation = function(){};
     ctx.prototype.setTransform = function(){};
-
+    
     //add options for alternative namespace
     if (typeof window === "object") {
         window.C2S = ctx;
