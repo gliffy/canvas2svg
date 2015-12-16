@@ -1077,7 +1077,7 @@
             }
 
             svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
-                image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
+                image.nodeName === "CANVAS" ? image.toDataURL() : image.src);
             parent.appendChild(svgImage);
             this.__currentElement = svgImage;
             this.translate(dx, dy);
@@ -1099,7 +1099,7 @@
             img.setAttribute("width", image.width);
             img.setAttribute("height", image.height);
             img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
-                image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
+                image.nodeName === "CANVAS" ? image.toDataURL() : image.src);
             pattern.appendChild(img);
             this.__defs.appendChild(pattern);
         } else if(image instanceof ctx) {
@@ -1108,7 +1108,7 @@
         }
         return new CanvasPattern(pattern, this);
     };
-    
+
     ctx.prototype.setLineDash = function(dashArray) {
         if (dashArray && dashArray.length > 0) {
             this.lineDash = dashArray.join(",");
@@ -1116,7 +1116,7 @@
             this.lineDash = null;
         }
     };
-    
+
     /**
      * Not yet implemented
      */
@@ -1126,7 +1126,7 @@
     ctx.prototype.putImageData = function(){};
     ctx.prototype.globalCompositeOperation = function(){};
     ctx.prototype.setTransform = function(){};
-    
+
     //add options for alternative namespace
     if (typeof window === "object") {
         window.C2S = ctx;
