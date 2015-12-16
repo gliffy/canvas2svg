@@ -1075,13 +1075,10 @@
                 context.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
                 image = canvas;
             }
-
+            svgImage.setAttribute("transform",["translate(",dx,",",dy,")"].join(""));
             svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
                 image.nodeName === "CANVAS" ? image.toDataURL() : image.src);
             parent.appendChild(svgImage);
-            this.__currentElement = svgImage;
-            this.translate(dx, dy);
-            this.__currentElement = currentElement;
         }
     };
 
