@@ -777,9 +777,37 @@
 
 
     /**
+     * Clear entire canvas:
+     * 1. save current transforms
+     * 2. remove all the childNodes of the root g element
+     */
+    ctx.prototype.__clearCanvas = function() {
+        var current = this.__closestGroupOrSvg(),
+            transform = current.getAttribute("transform");
+        var rootGroup = this.__root.childNodes[1];
+        var childNodes = rootGroup.childNodes;
+        for (var i = childNodes.length - 1; i >= 0; i--) {
+            if (childNodes[i]) {
+                rootGroup.removeChild(childNodes[i]);
+            }
+        }
+        this.__currentElement = rootGroup;
+        this.__stack = [this.__getStyleState()];
+        this.__groupStack = [];
+        if (transform) {
+            this.__addTransform(transform);
+        }
+    };
+
+    /**
      * "Clears" a canvas by just drawing a white rectangle in the current group.
      */
     ctx.prototype.clearRect = function(x, y, width, height) {
+        //clear entire canvas
+        if (x === 0 && y === 0 && width === this.width && height === this.height) {
+            this.__clearCanvas();
+            return;
+        }
         var rect, parent = this.__closestGroupOrSvg();
         rect = this.__createElement("rect", {
             x : x,
@@ -1043,7 +1071,7 @@
         if(image instanceof ctx) {
             //canvas2svg mock canvas context. In the future we may want to clone nodes instead.
             //also I'm currently ignoring dw, dh, sw, sh, sx, sy for a mock context.
-            svg = image.getSvg();
+            svg = image.getSvg().cloneNode(true);
             if (svg.childNodes && svg.childNodes.length > 1) {
                 defs = svg.childNodes[0];
                 while(defs.childNodes.length) {
@@ -1053,10 +1081,8 @@
                 }
                 group = svg.childNodes[1];
                 if (group) {
+                    group.setAttribute("transform",["translate(",dx,",",dy,")"].join(""));
                     parent.appendChild(group);
-                    this.__currentElement = group;
-                    this.translate(dx, dy);
-                    this.__currentElement = currentElement;
                 }
             }
         } else if(image.nodeName === "CANVAS" || image.nodeName === "IMG") {
