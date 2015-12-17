@@ -447,6 +447,10 @@
      */
     ctx.prototype.restore = function(){
         this.__currentElement = this.__groupStack.pop();
+        //Clearing canvas will make the poped group invalid, currentElement is set to the root group node.
+        if (!this.__currentElement) {
+            this.__currentElement = this.__root.childNodes[1];
+        }
         var state = this.__stack.pop();
         this.__applyStyleState(state);
 
@@ -792,7 +796,7 @@
             }
         }
         this.__currentElement = rootGroup;
-        this.__stack = [this.__getStyleState()];
+        //reset __groupStack as all the child group nodes are all removed.
         this.__groupStack = [];
         if (transform) {
             this.__addTransform(transform);
