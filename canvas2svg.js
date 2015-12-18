@@ -1071,7 +1071,7 @@
 
         parent = this.__closestGroupOrSvg();
         currentElement = this.__currentElement;
-
+        var translateDirective = "translate(" + dx + ", " + dy + ")";
         if(image instanceof ctx) {
             //canvas2svg mock canvas context. In the future we may want to clone nodes instead.
             //also I'm currently ignoring dw, dh, sw, sh, sx, sy for a mock context.
@@ -1085,7 +1085,15 @@
                 }
                 group = svg.childNodes[1];
                 if (group) {
-                    group.setAttribute("transform",["translate(",dx,",",dy,")"].join(""));
+                    //save original transform
+                    var originTransform = group.getAttribute("transform");
+                    var transformDirective;
+                    if (originTransform) {
+                        transformDirective = originTransform+" "+translateDirective;
+                    } else {
+                        transformDirective = translateDirective;
+                    }
+                    group.setAttribute("transform", transformDirective);
                     parent.appendChild(group);
                 }
             }
@@ -1105,9 +1113,9 @@
                 context.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
                 image = canvas;
             }
-            svgImage.setAttribute("transform",["translate(",dx,",",dy,")"].join(""));
+            svgImage.setAttribute("transform", translateDirective);
             svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
-                image.nodeName === "CANVAS" ? image.toDataURL() : image.src);
+                image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
             parent.appendChild(svgImage);
         }
     };
@@ -1126,7 +1134,7 @@
             img.setAttribute("width", image.width);
             img.setAttribute("height", image.height);
             img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
-                image.nodeName === "CANVAS" ? image.toDataURL() : image.src);
+                image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
             pattern.appendChild(img);
             this.__defs.appendChild(pattern);
         } else if(image instanceof ctx) {
