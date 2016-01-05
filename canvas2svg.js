@@ -447,6 +447,10 @@
      */
     ctx.prototype.restore = function(){
         this.__currentElement = this.__groupStack.pop();
+        //Clearing canvas will make the poped group invalid, currentElement is set to the root group node.
+        if (!this.__currentElement) {
+            this.__currentElement = this.__root.childNodes[1];
+        }
         var state = this.__stack.pop();
         this.__applyStyleState(state);
 
@@ -777,9 +781,37 @@
 
 
     /**
+     * Clear entire canvas:
+     * 1. save current transforms
+     * 2. remove all the childNodes of the root g element
+     */
+    ctx.prototype.__clearCanvas = function() {
+        var current = this.__closestGroupOrSvg(),
+            transform = current.getAttribute("transform");
+        var rootGroup = this.__root.childNodes[1];
+        var childNodes = rootGroup.childNodes;
+        for (var i = childNodes.length - 1; i >= 0; i--) {
+            if (childNodes[i]) {
+                rootGroup.removeChild(childNodes[i]);
+            }
+        }
+        this.__currentElement = rootGroup;
+        //reset __groupStack as all the child group nodes are all removed.
+        this.__groupStack = [];
+        if (transform) {
+            this.__addTransform(transform);
+        }
+    };
+
+    /**
      * "Clears" a canvas by just drawing a white rectangle in the current group.
      */
     ctx.prototype.clearRect = function(x, y, width, height) {
+        //clear entire canvas
+        if (x === 0 && y === 0 && width === this.width && height === this.height) {
+            this.__clearCanvas();
+            return;
+        }
         var rect, parent = this.__closestGroupOrSvg();
         rect = this.__createElement("rect", {
             x : x,
@@ -1039,11 +1071,11 @@
 
         parent = this.__closestGroupOrSvg();
         currentElement = this.__currentElement;
-
+        var translateDirective = "translate(" + dx + ", " + dy + ")";
         if(image instanceof ctx) {
             //canvas2svg mock canvas context. In the future we may want to clone nodes instead.
             //also I'm currently ignoring dw, dh, sw, sh, sx, sy for a mock context.
-            svg = image.getSvg();
+            svg = image.getSvg().cloneNode(true);
             if (svg.childNodes && svg.childNodes.length > 1) {
                 defs = svg.childNodes[0];
                 while(defs.childNodes.length) {
@@ -1053,10 +1085,16 @@
                 }
                 group = svg.childNodes[1];
                 if (group) {
+                    //save original transform
+                    var originTransform = group.getAttribute("transform");
+                    var transformDirective;
+                    if (originTransform) {
+                        transformDirective = originTransform+" "+translateDirective;
+                    } else {
+                        transformDirective = translateDirective;
+                    }
+                    group.setAttribute("transform", transformDirective);
                     parent.appendChild(group);
-                    this.__currentElement = group;
-                    this.translate(dx, dy);
-                    this.__currentElement = currentElement;
                 }
             }
         } else if(image.nodeName === "CANVAS" || image.nodeName === "IMG") {
@@ -1075,13 +1113,10 @@
                 context.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
                 image = canvas;
             }
-
+            svgImage.setAttribute("transform", translateDirective);
             svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
                 image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
             parent.appendChild(svgImage);
-            this.__currentElement = svgImage;
-            this.translate(dx, dy);
-            this.__currentElement = currentElement;
         }
     };
 
@@ -1108,7 +1143,7 @@
         }
         return new CanvasPattern(pattern, this);
     };
-    
+
     ctx.prototype.setLineDash = function(dashArray) {
         if (dashArray && dashArray.length > 0) {
             this.lineDash = dashArray.join(",");
@@ -1116,7 +1151,7 @@
             this.lineDash = null;
         }
     };
-    
+
     /**
      * Not yet implemented
      */
@@ -1126,7 +1161,7 @@
     ctx.prototype.putImageData = function(){};
     ctx.prototype.globalCompositeOperation = function(){};
     ctx.prototype.setTransform = function(){};
-    
+
     //add options for alternative namespace
     if (typeof window === "object") {
         window.C2S = ctx;
