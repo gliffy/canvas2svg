@@ -141,16 +141,10 @@
             apply : "stroke"
         },
         "globalAlpha": {
-            svgAttr : "stroke-opacity",
+            svgAttr : "opacity",
             canvas : 1,
             svg : 1,
-            apply :  "stroke"
-        },
-        "globalAlpha": {
-            svgAttr : "fill-opacity",
-            canvas : 1,
-            svg : 1,
-            apply : "fill"
+            apply :  "fill stroke"
         },
         "font":{
             //font converts to multiple svg attributes, there is custom logic for this
@@ -382,14 +376,16 @@
                         }
                         this.__currentElement.setAttribute(style.svgAttr+"-opacity", opacity);
                     } else {
+                        var attr = style.svgAttr;
                         if (keys[i] === 'globalAlpha') {
-                            if (this.__currentElement.getAttribute(style.svgAttr)) {
+                            attr = type+'-'+style.svgAttr;
+                            if (this.__currentElement.getAttribute(attr)) {
                                  //fill-opacity or stroke-opacity has already been set by stroke or fill.
                                 continue;
                             }
                         }
                         //otherwise only update attribute if right type, and not svg default
-                        this.__currentElement.setAttribute(style.svgAttr, value);
+                        this.__currentElement.setAttribute(attr, value);
 
 
                     }
