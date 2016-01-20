@@ -144,7 +144,7 @@
             svgAttr : "opacity",
             canvas : 1,
             svg : 1,
-            apply : "fill stroke"
+            apply :  "fill stroke"
         },
         "font":{
             //font converts to multiple svg attributes, there is custom logic for this
@@ -368,10 +368,26 @@
                         regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
                         matches = regex.exec(value);
                         this.__currentElement.setAttribute(style.svgAttr, format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
-                        this.__currentElement.setAttribute(style.svgAttr+"-opacity", matches[4]);
+                        //should take globalAlpha here
+                        var opacity = matches[4];
+                        var globalAlpha = this.globalAlpha;
+                        if (globalAlpha != null) {
+                            opacity *= globalAlpha;
+                        }
+                        this.__currentElement.setAttribute(style.svgAttr+"-opacity", opacity);
                     } else {
+                        var attr = style.svgAttr;
+                        if (keys[i] === 'globalAlpha') {
+                            attr = type+'-'+style.svgAttr;
+                            if (this.__currentElement.getAttribute(attr)) {
+                                 //fill-opacity or stroke-opacity has already been set by stroke or fill.
+                                continue;
+                            }
+                        }
                         //otherwise only update attribute if right type, and not svg default
-                        this.__currentElement.setAttribute(style.svgAttr, value);
+                        this.__currentElement.setAttribute(attr, value);
+
+
                     }
                 }
             }

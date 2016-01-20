@@ -296,4 +296,40 @@ describe('canvas2svg', function() {
         });
 
     });
+
+    describe("supports globalOpacity", function() {
+        it("set stroke-opacity when stroking and set fill-opacity when filling",function() {
+            var ctx = new C2S();
+            ctx.globalAlpha = 0.5;
+            ctx.moveTo(5,5);
+            ctx.lineTo(15,15);
+            ctx.stroke();
+            var svg = ctx.getSvg();
+            expect(svg.querySelector("path").getAttribute("stroke-opacity")).to.equal('0.5');
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = "#000000";
+            ctx.fill();
+            expect(svg.querySelector("path").getAttribute("fill-opacity")).to.equal('0.1');
+            //stroke-opacity stays o.5
+            expect(svg.querySelector("path").getAttribute("stroke-opacity")).to.equal('0.5');
+        });
+
+        it("added into color opacity when stroking or filling with rgba style color. ",function() {
+            var ctx = new C2S();
+            ctx.strokeStyle="rgba(0,0,0,0.8)";
+            ctx.globalAlpha = 0.5;
+            ctx.moveTo(5,5);
+            ctx.lineTo(15,15);
+            ctx.stroke();
+            var svg = ctx.getSvg();
+            expect(svg.querySelector("path").getAttribute("stroke")).to.equal('rgb(0,0,0)');
+            //stroke-opacity should be globalAlpha*(alpha in rgba)
+            expect(svg.querySelector("path").getAttribute("stroke-opacity")).to.equal(''+0.8*0.5);
+            ctx.globalAlpha = 0.6;
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fill();
+            expect(svg.querySelector("path").getAttribute("fill-opacity")).to.equal(''+0.6*0.6);
+            expect(svg.querySelector("path").getAttribute("stroke-opacity")).to.equal(''+0.8*0.5);
+        });
+    });
 });
