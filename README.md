@@ -33,6 +33,8 @@ var svg = ctx.getSvg();
 
 Updates
 ==========
+- v1.0.17 Fix bug with drawing in an empty context. Fix image translation problem. Fix globalAlpha issue.
+- v1.0.16 Add npm publishing support, bower file and optimize for arcs with no angles.
 - v1.0.15 Setup travis, add testharness and debug playground, and fix regression for __createElement refactor
 - v1.0.14 bugfix for gradients, move __createElement to scoped createElement function, so all classes have access.
 - v1.0.13 set paint order before stroke and fill to make them behavior like canvas
