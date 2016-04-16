@@ -297,6 +297,19 @@ describe('canvas2svg', function() {
 
     });
 
+    describe("supports fonts", function () {
+        it("doesn't crash when using a font", function () {
+            var ctx = new C2S();
+            ctx.font = "normal 12px 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+            ctx.fillText("A Text Example", 0, 50);
+            var svg = ctx.getSvg();
+            expect(svg.querySelector("text").getAttribute("font-family")).to.equal("\'Helvetica Neue\', \'Helvetica\', \'Arial\', sans-serif");
+            expect(svg.querySelector("text").getAttribute("font-size")).to.equal("12px");
+            expect(svg.querySelector("text").getAttribute("font-weight")).to.equal("normal");
+            expect(svg.querySelector("text").getAttribute("font-style")).to.equal("normal");
+        });
+    });
+
     describe("supports globalOpacity", function() {
         it("set stroke-opacity when stroking and set fill-opacity when filling",function() {
             var ctx = new C2S();
