@@ -1,6 +1,6 @@
 {
   "name": "canvas2svg",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "canvas2svg",
   "main": "canvas2svg.js",
   "homepage": "http://gliffy.github.io/canvas2svg/",
