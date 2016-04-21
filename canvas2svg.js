@@ -1029,6 +1029,7 @@
             id =  randomString(this.__ids),
             newGroup = this.__createElement("g");
 
+        this.__applyCurrentDefaultPath();
         group.removeChild(this.__currentElement);
         clipPath.setAttribute("id", id);
         clipPath.appendChild(this.__currentElement);

@@ -332,4 +332,16 @@ describe('canvas2svg', function() {
             expect(svg.querySelector("path").getAttribute("stroke-opacity")).to.equal(''+0.8*0.5);
         });
     });
+
+    describe("supports clip", function() {
+        it("adds clippath", function() {
+            var ctx = new C2S();
+            ctx.rect(200, 200, 400, 400);
+            ctx.clip();
+            ctx.fillStyle = "#000000";
+            ctx.rect(100, 100, 300, 300);
+            var svg = ctx.getSvg();
+            expect(svg.querySelector("clipPath > path").getAttribute("d")).to.not.equal(null);
+        });
+    });
 });
