@@ -100,6 +100,7 @@ N.B. You may not need node-canvas for some simple operations when using jsdom >=
 
 Updates
 ==========
+- v1.0.19 Fix __parseFont to not crash
 - v1.0.18 clip was not working, the path never made it to the clip area
 - v1.0.17 Fix bug with drawing in an empty context. Fix image translation problem. Fix globalAlpha issue.
 - v1.0.16 Add npm publishing support, bower file and optimize for arcs with no angles.
