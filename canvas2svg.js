@@ -585,7 +585,9 @@
      * Closes the current path
      */
     ctx.prototype.closePath = function(){
-        this.__addPathCommand("Z");
+        if (this.__currentDefaultPath) {
+            this.__addPathCommand("Z");
+        }
     };
 
     /**
