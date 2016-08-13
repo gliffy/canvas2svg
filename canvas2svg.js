@@ -340,13 +340,23 @@
      * @private
      */
     ctx.prototype.__applyStyleToCurrentElement = function (type) {
+    	var currentElement = this.__currentElement;
+    	var currentStyleGroup = this.__currentElementsToStyle;
+    	if (currentStyleGroup) {
+    		currentElement.setAttribute(type, "");
+    		currentElement = currentStyleGroup.element;
+    		currentStyleGroup.children.forEach(function (node) {
+    			node.setAttribute(type, "");
+    		})
+    	}
+
         var keys = Object.keys(STYLES), i, style, value, id, regex, matches;
-        for (i=0; i<keys.length; i++) {
+        for (i = 0; i < keys.length; i++) {
             style = STYLES[keys[i]];
             value = this[keys[i]];
             if (style.apply) {
                 //is this a gradient or pattern?
-                if (style.apply.indexOf("fill")!==-1 && value instanceof CanvasPattern) {
+                if (style.apply.indexOf("fill") !== -1 && value instanceof CanvasPattern) {
                     //pattern
                     if (value.__ctx) {
                         //copy over defs
@@ -356,37 +366,35 @@
                             this.__defs.appendChild(value.__ctx.__defs.childNodes[0]);
                         }
                     }
-                    this.__currentElement.setAttribute("fill", format("url(#{id})", {id:value.__root.getAttribute("id")}));
+                    currentElement.setAttribute("fill", format("url(#{id})", {id:value.__root.getAttribute("id")}));
                 }
                 else if (style.apply.indexOf("fill")!==-1 && value instanceof CanvasGradient) {
                     //gradient
-                    this.__currentElement.setAttribute("fill", format("url(#{id})", {id:value.__root.getAttribute("id")}));
+                    currentElement.setAttribute("fill", format("url(#{id})", {id:value.__root.getAttribute("id")}));
                 } else if (style.apply.indexOf(type)!==-1 && style.svg !== value) {
                     if ((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf("rgba") !== -1) {
                         //separate alpha value, since illustrator can't handle it
                         regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
                         matches = regex.exec(value);
-                        this.__currentElement.setAttribute(style.svgAttr, format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
+                        currentElement.setAttribute(style.svgAttr, format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
                         //should take globalAlpha here
                         var opacity = matches[4];
                         var globalAlpha = this.globalAlpha;
                         if (globalAlpha != null) {
                             opacity *= globalAlpha;
                         }
-                        this.__currentElement.setAttribute(style.svgAttr+"-opacity", opacity);
+                        currentElement.setAttribute(style.svgAttr+"-opacity", opacity);
                     } else {
                         var attr = style.svgAttr;
                         if (keys[i] === 'globalAlpha') {
                             attr = type+'-'+style.svgAttr;
-                            if (this.__currentElement.getAttribute(attr)) {
+                            if (currentElement.getAttribute(attr)) {
                                  //fill-opacity or stroke-opacity has already been set by stroke or fill.
                                 continue;
                             }
                         }
                         //otherwise only update attribute if right type, and not svg default
-                        this.__currentElement.setAttribute(attr, value);
-
-
+                        currentElement.setAttribute(attr, value);
                     }
                 }
             }
@@ -462,13 +470,13 @@
      */
     ctx.prototype.restore = function () {
         this.__currentElement = this.__groupStack.pop();
+        this.__currentElementsToStyle = null;
         //Clearing canvas will make the poped group invalid, currentElement is set to the root group node.
         if (!this.__currentElement) {
             this.__currentElement = this.__root.childNodes[1];
         }
         var state = this.__stack.pop();
         this.__applyStyleState(state);
-
     };
 
     /**
@@ -479,6 +487,12 @@
         //if the current element has siblings, add another group
         var parent = this.__closestGroupOrSvg();
         if (parent.childNodes.length > 0) {
+        	if (this.__currentElement.nodeName === "path") {
+        		this.__currentElementsToStyle || (this.__currentElementsToStyle = { element: parent, children: [] });
+        		this.__currentElementsToStyle.children.push(this.__currentElement)
+        		this.__applyCurrentDefaultPath();
+        	}
+
             var group = this.__createElement("g");
             parent.appendChild(group);
             this.__currentElement = group;
@@ -548,11 +562,11 @@
      * @private
      */
     ctx.prototype.__applyCurrentDefaultPath = function () {
-        if (this.__currentElement.nodeName === "path") {
-            var d = this.__currentDefaultPath;
-            this.__currentElement.setAttribute("d", d);
+    	var currentElement = this.__currentElement;
+        if (currentElement.nodeName === "path") {
+			currentElement.setAttribute("d", this.__currentDefaultPath);
         } else {
-            throw new Error("Attempted to apply path command to node " + this.__currentElement.nodeName);
+			console.error("Attempted to apply path command to node", currentElement.nodeName);
         }
     };
 
