@@ -356,7 +356,7 @@
             value = this[keys[i]];
             if (style.apply) {
                 //is this a gradient or pattern?
-                if (style.apply.indexOf("fill") !== -1 && value instanceof CanvasPattern) {
+                if (value instanceof CanvasPattern) {
                     //pattern
                     if (value.__ctx) {
                         //copy over defs
@@ -366,11 +366,11 @@
                             this.__defs.appendChild(value.__ctx.__defs.childNodes[0]);
                         }
                     }
-                    currentElement.setAttribute("fill", format("url(#{id})", {id:value.__root.getAttribute("id")}));
+                    currentElement.setAttribute(style.apply, format("url(#{id})", {id:value.__root.getAttribute("id")}));
                 }
-                else if (style.apply.indexOf("fill")!==-1 && value instanceof CanvasGradient) {
+                else if (value instanceof CanvasGradient) {
                     //gradient
-                    currentElement.setAttribute("fill", format("url(#{id})", {id:value.__root.getAttribute("id")}));
+                    currentElement.setAttribute(style.apply, format("url(#{id})", {id:value.__root.getAttribute("id")}));
                 } else if (style.apply.indexOf(type)!==-1 && style.svg !== value) {
                     if ((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf("rgba") !== -1) {
                         //separate alpha value, since illustrator can't handle it
