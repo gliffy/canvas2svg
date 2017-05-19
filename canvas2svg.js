@@ -488,7 +488,7 @@
         var parent = this.__closestGroupOrSvg();
         if (parent.childNodes.length > 0) {
         	if (this.__currentElement.nodeName === "path") {
-        		this.__currentElementsToStyle || (this.__currentElementsToStyle = { element: parent, children: [] });
+        		if (!this.__currentElementsToStyle) this.__currentElementsToStyle = {element: parent, children: []};
         		this.__currentElementsToStyle.children.push(this.__currentElement)
         		this.__applyCurrentDefaultPath();
         	}
