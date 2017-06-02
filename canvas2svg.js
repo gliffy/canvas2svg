@@ -212,6 +212,7 @@
     /**
      * The mock canvas context
      * @param o - options include:
+     * ctx - existing Context2D to wrap around
      * width - width of your canvas (defaults to 500)
      * height - height of your canvas (defaults to 500)
      * enableMirroring - enables canvas mirroring (get image data) (defaults to false)
@@ -244,8 +245,15 @@
 
         this.canvas = this;   ///point back to this instance!
         this.__document = options.document || document;
-        this.__canvas = this.__document.createElement("canvas");
-        this.__ctx = this.__canvas.getContext("2d");
+
+        // allow passing in an existing context to wrap around
+        // if a context is passed in, we know a canvas already exist
+        if (options.ctx) {
+            this.__ctx = options.ctx;
+        } else {
+            this.__canvas = this.__document.createElement("canvas");
+            this.__ctx = this.__canvas.getContext("2d");
+        }
 
         this.__setDefaultStyles();
         this.__stack = [this.__getStyleState()];
