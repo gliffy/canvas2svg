@@ -1128,8 +1128,7 @@
                     parent.appendChild(group);
                 }
             }
-        } else if (image.nodeName === "CANVAS" || image.nodeName === "IMG") {
-            //canvas or image
+        } else if (image.nodeName === "IMG") {
             svgImage = this.__createElement("image");
             svgImage.setAttribute("width", dw);
             svgImage.setAttribute("height", dh);
@@ -1147,6 +1146,29 @@
             svgImage.setAttribute("transform", translateDirective);
             svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
                 image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
+            parent.appendChild(svgImage);
+        } else if (image.nodeName === "CANVAS") {
+            svgImage = this.__createElement("image");
+            svgImage.setAttribute("width", dw);
+            svgImage.setAttribute("height", dh);
+            svgImage.setAttribute("preserveAspectRatio", "none");
+
+            // draw canvas onto temporary canvas so that smoothing can be handled
+            canvas = this.__document.createElement("canvas");
+            canvas.width = dw;
+            canvas.height = dh;
+            var imageSmoothingEnabled = this.imageSmoothingEnabled;
+            context = canvas.getContext("2d");
+            context.imageSmoothingEnabled = imageSmoothingEnabled;
+            context.mozImageSmoothingEnabled = imageSmoothingEnabled;
+            context.oImageSmoothingEnabled = imageSmoothingEnabled;
+            context.webkitImageSmoothingEnabled = imageSmoothingEnabled;
+            context.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
+            image = canvas;
+
+            svgImage.setAttribute("transform", translateDirective);
+            svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
+                image.toDataURL());
             parent.appendChild(svgImage);
         }
     };
