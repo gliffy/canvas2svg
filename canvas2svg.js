@@ -216,10 +216,11 @@
      * width - width of your canvas (defaults to 500)
      * height - height of your canvas (defaults to 500)
      * enableMirroring - enables canvas mirroring (get image data) (defaults to false)
+     * embedImages - all images will be embedded as PNG files, rather than linked to (defaults to false)
      * document - the document object (defaults to the current document)
      */
     ctx = function (o) {
-        var defaultOptions = { width:500, height:500, enableMirroring : false}, options;
+        var defaultOptions = { width:500, height:500, enableMirroring : false, embedImages : false}, options;
 
         //keep support for this way of calling C2S: new C2S(width,height)
         if (arguments.length > 1) {
@@ -241,6 +242,7 @@
         this.width = options.width || defaultOptions.width;
         this.height = options.height || defaultOptions.height;
         this.enableMirroring = options.enableMirroring !== undefined ? options.enableMirroring : defaultOptions.enableMirroring;
+        this.embedImages = options.embedImages !== undefined ? options.embedImages : defaultOptions.embedImages;
 
         this.canvas = this;   ///point back to this instance!
         this.__document = options.document || document;
@@ -1143,7 +1145,7 @@
             svgImage.setAttribute("height", dh);
             svgImage.setAttribute("preserveAspectRatio", "none");
 
-            if (sx || sy || sw !== image.width || sh !== image.height) {
+            if (sx || sy || sw !== image.width || sh !== image.height || this.embedImages) {
                 //crop the image using a temporary canvas
                 canvas = this.__document.createElement("canvas");
                 canvas.width = dw;
