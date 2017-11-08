@@ -1141,6 +1141,7 @@
             svgImage = this.__createElement("image");
             svgImage.setAttribute("width", dw);
             svgImage.setAttribute("height", dh);
+            svgImage.setAttribute("opacity", this.globalAlpha);
             svgImage.setAttribute("preserveAspectRatio", "none");
 
             if (sx || sy || sw !== image.width || sh !== image.height) {
