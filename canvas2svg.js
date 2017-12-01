@@ -16,15 +16,6 @@
 
     var STYLES, ctx, CanvasGradient, CanvasPattern, namedEntities;
 
-    //helper function to format a string
-    function format(str, args) {
-        var keys = Object.keys(args), i;
-        for (i=0; i<keys.length; i++) {
-            str = str.replace(new RegExp("\\{" + keys[i] + "\\}", "gi"), args[keys[i]]);
-        }
-        return str;
-    }
-
     //helper function that generates a random string
     function randomString(holder) {
         var chars, randomstring, i;
@@ -196,7 +187,10 @@
             //separate alpha value, since webkit can't handle it
             regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
             matches = regex.exec(color);
-            stop.setAttribute("stop-color", format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
+            var r = matches[1],
+                g = matches[2],
+                b = matches[3];
+            stop.setAttribute("stop-color", `rgb(${r}, ${g}, ${b})`);
             stop.setAttribute("stop-opacity", matches[4]);
         } else {
             stop.setAttribute("stop-color", color);
@@ -348,15 +342,15 @@
      * @private
      */
     ctx.prototype.__applyStyleToCurrentElement = function (type) {
-    	var currentElement = this.__currentElement;
-    	var currentStyleGroup = this.__currentElementsToStyle;
-    	if (currentStyleGroup) {
-    		currentElement.setAttribute(type, "");
-    		currentElement = currentStyleGroup.element;
-    		currentStyleGroup.children.forEach(function (node) {
-    			node.setAttribute(type, "");
-    		})
-    	}
+        var currentElement = this.__currentElement;
+        var currentStyleGroup = this.__currentElementsToStyle;
+        if (currentStyleGroup) {
+            currentElement.setAttribute(type, "");
+            currentElement = currentStyleGroup.element;
+            currentStyleGroup.children.forEach(function (node) {
+                node.setAttribute(type, "");
+            })
+        }
 
         var keys = Object.keys(STYLES), i, style, value, id, regex, matches;
         for (i = 0; i < keys.length; i++) {
@@ -374,17 +368,22 @@
                             this.__defs.appendChild(value.__ctx.__defs.childNodes[0]);
                         }
                     }
-                    currentElement.setAttribute(style.apply, format("url(#{id})", {id:value.__root.getAttribute("id")}));
+                    var id = value.__root.getAttribute("id")
+                    currentElement.setAttribute(style.apply, `url(#${id})`);
                 }
                 else if (value instanceof CanvasGradient) {
                     //gradient
-                    currentElement.setAttribute(style.apply, format("url(#{id})", {id:value.__root.getAttribute("id")}));
+                    var id = value.__root.getAttribute("id")
+                    currentElement.setAttribute(style.apply, `url(#${id})`);
                 } else if (style.apply.indexOf(type)!==-1 && style.svg !== value) {
                     if ((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf("rgba") !== -1) {
                         //separate alpha value, since illustrator can't handle it
                         regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
                         matches = regex.exec(value);
-                        currentElement.setAttribute(style.svgAttr, format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
+                        var r = matches[1],
+                            g = matches[2],
+                            b = matches[3];
+                        currentElement.setAttribute(style.svgAttr, `rgb(${r}, ${g}, ${b})`);
                         //should take globalAlpha here
                         var opacity = matches[4];
                         var globalAlpha = this.globalAlpha;
@@ -495,11 +494,11 @@
         //if the current element has siblings, add another group
         var parent = this.__closestGroupOrSvg();
         if (parent.childNodes.length > 0) {
-        	if (this.__currentElement.nodeName === "path") {
-        		if (!this.__currentElementsToStyle) this.__currentElementsToStyle = {element: parent, children: []};
-        		this.__currentElementsToStyle.children.push(this.__currentElement)
-        		this.__applyCurrentDefaultPath();
-        	}
+            if (this.__currentElement.nodeName === "path") {
+                if (!this.__currentElementsToStyle) this.__currentElementsToStyle = {element: parent, children: []};
+                this.__currentElementsToStyle.children.push(this.__currentElement)
+                this.__applyCurrentDefaultPath();
+            }
 
             var group = this.__createElement("g");
             parent.appendChild(group);
@@ -523,7 +522,7 @@
         if (y === undefined) {
             y = x;
         }
-        this.__addTransform(format("scale({x},{y})", {x:x, y:y}));
+        this.__addTransform(`scale(${x}, ${y})`);
     };
 
     /**
@@ -531,21 +530,21 @@
      */
     ctx.prototype.rotate = function (angle) {
         var degrees = (angle * 180 / Math.PI);
-        this.__addTransform(format("rotate({angle},{cx},{cy})", {angle:degrees, cx:0, cy:0}));
+        this.__addTransform(`rotate(${angle}, 0, 0)`);
     };
 
     /**
      * translates the current element
      */
     ctx.prototype.translate = function (x, y) {
-        this.__addTransform(format("translate({x},{y})", {x:x,y:y}));
+        this.__addTransform(`translate(${x}, ${y})`);
     };
 
     /**
      * applies a transform to the current element
      */
     ctx.prototype.transform = function (a, b, c, d, e, f) {
-        this.__addTransform(format("matrix({a},{b},{c},{d},{e},{f})", {a:a, b:b, c:c, d:d, e:e, f:f}));
+        this.__addTransform(`matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`);
     };
 
     /**
@@ -570,11 +569,11 @@
      * @private
      */
     ctx.prototype.__applyCurrentDefaultPath = function () {
-    	var currentElement = this.__currentElement;
+        var currentElement = this.__currentElement;
         if (currentElement.nodeName === "path") {
-			currentElement.setAttribute("d", this.__currentDefaultPath);
+            currentElement.setAttribute("d", this.__currentDefaultPath);
         } else {
-			console.error("Attempted to apply path command to node", currentElement.nodeName);
+            console.error("Attempted to apply path command to node", currentElement.nodeName);
         }
     };
 
@@ -583,8 +582,7 @@
      * @private
      */
     ctx.prototype.__addPathCommand = function (command) {
-        this.__currentDefaultPath += " ";
-        this.__currentDefaultPath += command;
+        this.__currentDefaultPath += ` ${command}`;
     };
 
     /**
@@ -598,7 +596,7 @@
 
         // creates a new subpath with the given point
         this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
+        this.__addPathCommand(`M ${x} ${y}`);
     };
 
     /**
@@ -615,11 +613,7 @@
      */
     ctx.prototype.lineTo = function (x, y) {
         this.__currentPosition = {x: x, y: y};
-        if (this.__currentDefaultPath.indexOf('M') > -1) {
-            this.__addPathCommand(format("L {x} {y}", {x:x, y:y}));
-        } else {
-            this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
-        }
+        this.__addPathCommand(`L ${x} ${y}`);
     };
 
     /**
@@ -627,8 +621,7 @@
      */
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
         this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("C {cp1x} {cp1y} {cp2x} {cp2y} {x} {y}",
-            {cp1x:cp1x, cp1y:cp1y, cp2x:cp2x, cp2y:cp2y, x:x, y:y}));
+        this.__addPathCommand(`C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`)
     };
 
     /**
@@ -636,7 +629,7 @@
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
         this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("Q {cpx} {cpy} {x} {y}", {cpx:cpx, cpy:cpy, x:x, y:y}));
+        this.__addPathCommand(`Q ${cpx} ${cpy} ${x} ${y}`);
     };
 
 
@@ -1036,9 +1029,12 @@
         }
 
         this.lineTo(startX, startY);
-        this.__addPathCommand(format("A {rx} {ry} {xAxisRotation} {largeArcFlag} {sweepFlag} {endX} {endY}",
-            {rx:radius, ry:radius, xAxisRotation:0, largeArcFlag:largeArcFlag, sweepFlag:sweepFlag, endX:endX, endY:endY}));
 
+        var rx = radius,
+            ry = radius,
+            xAxisRotation = 0;
+
+        this.__addPathCommand(`A ${rx} ${ry} ${xAxisRotation} ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`)
         this.__currentPosition = {x: endX, y: endY};
     };
 
@@ -1059,7 +1055,7 @@
         this.__defs.appendChild(clipPath);
 
         //set the clip path to this group
-        group.setAttribute("clip-path", format("url(#{id})", {id:id}));
+        group.setAttribute("clip-path", `url(#${id})`);
 
         //clip paths can be scaled and transformed, we need to add another wrapper group to avoid later transformations
         // to this path
