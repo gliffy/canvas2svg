@@ -23,7 +23,7 @@
     "cheerio": "^0.19.0",
     "gulp": "^3.9.0",
     "gulp-bump": "^0.3.1",
-    "karma": "^0.12.36",
+    "karma": "^2.0.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^0.1.12",
     "karma-firefox-launcher": "^0.1.6",
