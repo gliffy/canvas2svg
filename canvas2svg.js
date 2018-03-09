@@ -356,6 +356,7 @@
         for (i = 0; i < keys.length; i++) {
             style = STYLES[keys[i]];
             value = this[keys[i]];
+
             if (style.apply) {
                 //is this a gradient or pattern?
                 if (value instanceof CanvasPattern) {
@@ -376,7 +377,7 @@
                     var id = value.__root.getAttribute("id")
                     currentElement.setAttribute(style.apply, `url(#${id})`);
                 } else if (style.apply.indexOf(type)!==-1 && style.svg !== value) {
-                    if ((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf("rgba") !== -1) {
+                    if ((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf && value.indexOf("rgba") !== -1) {
                         //separate alpha value, since illustrator can't handle it
                         regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
                         matches = regex.exec(value);
@@ -751,6 +752,10 @@
     ctx.prototype.fill = function () {
         if (this.__currentElement.nodeName === "path") {
             this.__currentElement.setAttribute("paint-order", "stroke fill markers");
+            /** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
+            if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
+                this.__currentElement.setAttribute("fill-rule", "evenodd");
+            }
         }
         this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("fill");
