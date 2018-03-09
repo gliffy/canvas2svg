@@ -739,22 +739,34 @@
      * Sets the stroke property on the current element
      */
     ctx.prototype.stroke = function () {
-        if (this.__currentElement.nodeName === "path") {
-            this.__currentElement.setAttribute("paint-order", "fill stroke markers");
+		var element = this.__currentElement;
+		if (element.__hasStroke) {
+			var path = this.__createElement("path", {}, true);
+			var parent = this.__closestGroupOrSvg();
+			parent.appendChild(path);
+			this.__currentElement = element = path;
+		}
+
+		if (element.nodeName === "path") {
+			element.setAttribute("paint-order", "fill stroke markers");
         }
+
         this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("stroke");
-    };
+
+		element.__hasStroke = true
+	};
 
     /**
      * Sets fill properties on the current element
      */
     ctx.prototype.fill = function () {
-        if (this.__currentElement.nodeName === "path") {
-            this.__currentElement.setAttribute("paint-order", "stroke fill markers");
+    	var element = this.__currentElement;
+        if (element.nodeName === "path") {
+			element.setAttribute("paint-order", "stroke fill markers");
             /** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
             if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
-                this.__currentElement.setAttribute("fill-rule", "evenodd");
+				element.setAttribute("fill-rule", "evenodd");
             }
         }
         this.__applyCurrentDefaultPath();
