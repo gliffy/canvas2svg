@@ -368,11 +368,13 @@
                     //pattern
                     if (value.__ctx) {
                         //copy over defs
-                        while(value.__ctx.__defs.childNodes.length) {
-                            id = value.__ctx.__defs.childNodes[0].getAttribute("id");
-                            this.__ids[id] = id;
-                            this.__defs.appendChild(value.__ctx.__defs.childNodes[0]);
-                        }
+						var childNodes = value.__ctx.__defs.childNodes
+						for (var j = 0; j < childNodes.length; j ++) {
+							var child = childNodes[j];
+							var id = child.getAttribute("id");
+							this.__ids[id] = id;
+							this.__defs.appendChild(child);
+						}
                     }
                     var id = value.__root.getAttribute("id")
                     currentElement.setAttribute(style.apply, `url(#${id})`);
