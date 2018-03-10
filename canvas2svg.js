@@ -272,11 +272,11 @@
         this.__root.appendChild(this.__currentElement);
     };
 
-	/**
-	 * Identifying marker.
-	 * @private
-	 */
-	ctx.prototype.__isCanvas2SVG = true
+    /**
+     * Identifying marker.
+     * @private
+     */
+    ctx.prototype.__isCanvas2SVG = true
 
     /**
      * Creates the specified svg element
@@ -368,13 +368,13 @@
                     //pattern
                     if (value.__ctx) {
                         //copy over defs
-						var childNodes = value.__ctx.__defs.childNodes
-						for (var j = 0; j < childNodes.length; j ++) {
-							var child = childNodes[j];
-							var id = child.getAttribute("id");
-							this.__ids[id] = id;
-							this.__defs.appendChild(child);
-						}
+                        var childNodes = value.__ctx.__defs.childNodes
+                        for (var j = 0; j < childNodes.length; j ++) {
+                            var child = childNodes[j];
+                            var id = child.getAttribute("id");
+                            this.__ids[id] = id;
+                            this.__defs.appendChild(child);
+                        }
                     }
                     var id = value.__root.getAttribute("id")
                     currentElement.setAttribute(style.apply, `url(#${id})`);
@@ -746,34 +746,33 @@
      * Sets the stroke property on the current element
      */
     ctx.prototype.stroke = function () {
-		var element = this.__currentElement;
-		if (element.__hasStroke) {
-			var path = this.__createElement("path", {}, true);
-			var parent = this.__closestGroupOrSvg();
-			parent.appendChild(path);
-			this.__currentElement = element = path;
-		}
+        var element = this.__currentElement;
+        var parent = this.__closestGroupOrSvg();
+        if (parent.__hasStroke) {
+            element = this.__currentElement = this.__createElement("path", {}, true);
+            parent.appendChild(element);
+        }
 
-		if (element.nodeName === "path") {
-			element.setAttribute("paint-order", "fill stroke markers");
+        if (element.nodeName === "path") {
+            element.setAttribute("paint-order", "fill stroke markers");
         }
 
         this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("stroke");
 
-		element.__hasStroke = true
-	};
+        parent.__hasStroke = true;
+    };
 
     /**
      * Sets fill properties on the current element
      */
     ctx.prototype.fill = function () {
-    	var element = this.__currentElement;
+        var element = this.__currentElement;
         if (element.nodeName === "path") {
-			element.setAttribute("paint-order", "stroke fill markers");
+            element.setAttribute("paint-order", "stroke fill markers");
             /** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
             if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
-				element.setAttribute("fill-rule", "evenodd");
+                element.setAttribute("fill-rule", "evenodd");
             }
         }
         this.__applyCurrentDefaultPath();
@@ -1190,7 +1189,7 @@
         pattern.setAttribute("width", image.width);
         pattern.setAttribute("height", image.height);
         pattern.setAttribute("patternUnits", "userSpaceOnUse");
-		if (image.nodeName === "CANVAS" || image.nodeName === "IMG") {
+        if (image.nodeName === "CANVAS" || image.nodeName === "IMG") {
             img = this.__document.createElementNS("http://www.w3.org/2000/svg", "image");
             img.setAttribute("width", image.width);
             img.setAttribute("height", image.height);
