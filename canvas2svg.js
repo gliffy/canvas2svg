@@ -272,6 +272,11 @@
         this.__root.appendChild(this.__currentElement);
     };
 
+	/**
+	 * Identifying marker.
+	 * @private
+	 */
+	ctx.prototype.__isCanvas2SVG = true
 
     /**
      * Creates the specified svg element
