@@ -190,7 +190,7 @@
             var r = matches[1],
                 g = matches[2],
                 b = matches[3];
-            stop.setAttribute("stop-color", `rgb(${r}, ${g}, ${b})`);
+            stop.setAttribute("stop-color", `rgb(${r},${g},${b})`);
             stop.setAttribute("stop-opacity", matches[4]);
         } else {
             stop.setAttribute("stop-color", color);
@@ -391,7 +391,7 @@
                         var r = matches[1],
                             g = matches[2],
                             b = matches[3];
-                        currentElement.setAttribute(style.svgAttr, `rgb(${r}, ${g}, ${b})`);
+                        currentElement.setAttribute(style.svgAttr, `rgb(${r},${g},${b})`);
                         //should take globalAlpha here
                         var opacity = matches[4];
                         var globalAlpha = this.globalAlpha;
@@ -530,7 +530,7 @@
         if (y === undefined) {
             y = x;
         }
-        this.__addTransform(`scale(${x}, ${y})`);
+        this.__addTransform(`scale(${x},${y})`);
     };
 
     /**
@@ -538,21 +538,21 @@
      */
     ctx.prototype.rotate = function (angle) {
         var degrees = (angle * 180 / Math.PI);
-        this.__addTransform(`rotate(${angle}, 0, 0)`);
+        this.__addTransform(`rotate(${angle},0,0)`);
     };
 
     /**
      * translates the current element
      */
     ctx.prototype.translate = function (x, y) {
-        this.__addTransform(`translate(${x}, ${y})`);
+        this.__addTransform(`translate(${x},${y})`);
     };
 
     /**
      * applies a transform to the current element
      */
     ctx.prototype.transform = function (a, b, c, d, e, f) {
-        this.__addTransform(`matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`);
+        this.__addTransform(`matrix(${a},${b},${c},${d},${e},${f})`);
     };
 
     /**
@@ -1190,7 +1190,7 @@
         pattern.setAttribute("width", image.width);
         pattern.setAttribute("height", image.height);
         pattern.setAttribute("patternUnits", "userSpaceOnUse");
-        if (image.nodeName === "CANVAS" || image.nodeName === "IMG") {
+		if (image.nodeName === "CANVAS" || image.nodeName === "IMG") {
             img = this.__document.createElementNS("http://www.w3.org/2000/svg", "image");
             img.setAttribute("width", image.width);
             img.setAttribute("height", image.height);
