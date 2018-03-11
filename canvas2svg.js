@@ -774,66 +774,94 @@
      * Sets fill properties on the current element
      */
     ctx.prototype.fill = function () {
-        var element = this.__currentElement;
-        var matrixString = this.__currentMatrix.toString();
+        var element = getOrCreateElementToApplyStyleTo.call(this, "fill", "stroke");
 
-        var group = this.__closestGroupOrSvg();
-        if (group.__hasFill || group.__hasStroke && group.__matrixString !== matrixString) {
-            element = this.__currentElement = this.__createElement("path", {}, true);
-            group.appendChild(element);
+        /** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
+        if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
+            element.setAttribute("fill-rule", "evenodd");
         }
 
-        if (element.nodeName === "path") {
-            element.setAttribute("paint-order", "stroke fill markers");
-
-            /** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
-            if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
-                element.setAttribute("fill-rule", "evenodd");
-            }
-        }
-
-        this.__applyCurrentDefaultPath();
         this.__applyStyleToCurrentElement("fill");
         this.__applyTransform(element, "fill");
-
-        group.__hasFill = true;
-        group.__matrixString = matrixString;
     };
 
     /**
      * Sets the stroke property on the current element
      */
     ctx.prototype.stroke = function () {
+        var element = getOrCreateElementToApplyStyleTo.call(this, "stroke", "fill");
+
+        this.__applyStyleToCurrentElement("stroke");
+        this.__applyTransform(element, "stroke");
+    };
+
+    function getOrCreateElementToApplyStyleTo(paint1, paint2) {
         var element = this.__currentElement;
         var matrixString = this.__currentMatrix.toString();
 
         var group = this.__closestGroupOrSvg();
-        if (group.__hasStroke || group.__hasFill && group.__matrixString !== matrixString) {
-            element = this.__currentElement = this.__createElement("path", {}, true);
-            group.appendChild(element);
+        var extras = group.__extras || (group.__extras = {})
+        var currentPath = this.__currentDefaultPath;
+
+        if (extras[paint1] || extras[paint2] && extras.matrixString !== matrixString) {
+            var pathHasNotChanged = currentPath === extras.currentPath;
+            if (pathHasNotChanged) {
+                if (element.nodeName === "path") {
+                    convertPathToDef.call(this, group);
+                }
+                element = appendUseElement.call(this, group, extras.id);
+            } else {
+                element = this.__currentElement = this.__createElement("path", {}, true);
+                group.appendChild(element);
+                this.__applyCurrentDefaultPath();
+            }
+        } else {
+            this.__applyCurrentDefaultPath();
         }
 
+        element.setAttribute("paint-order", `${paint2} ${paint1} markers`);
+
+        extras[paint1] = true;
+        extras.currentPath = currentPath;
+        extras.matrixString = matrixString;
+
+        return element;
+    };
+
+    function convertPathToDef(group, id) {
+        var element = this.__currentElement;
+
+        /** Create <path> <def> **/
+        var id = group.__extras.id = randomString(this.__ids);
+        var link = this.__createElement("path");
+        link.setAttribute("id", id);
+        link.setAttribute("d", element.getAttribute("d"));
+        this.__defs.appendChild(link);
+
+        /** Convert previous <path> to <use> **/
         if (element.nodeName === "path") {
-            element.setAttribute("paint-order", "fill stroke markers");
+            element.remove();
+            var attributes = element.attributes;
+            element = appendUseElement.call(this, group, id);
+            for (var i = 0; i < attributes.length; i ++) {
+                var attribute = attributes[i];
+                if (attribute.name === "d") continue;
+                element.setAttribute(attribute.name, attribute.value);
+            }
         }
+    };
 
-        this.__applyCurrentDefaultPath();
-        this.__applyStyleToCurrentElement("stroke");
-        this.__applyTransform(element, "stroke");
-
-        group.__hasStroke = true;
-        group.__matrixString = matrixString;
+    function appendUseElement(group, id) {
+        var element = this.__currentElement = this.__createElement("use", {}, true);
+        element.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", `#${id}`);
+        group.appendChild(element);
+        return element;
     };
 
     /**
      *  Adds a rectangle to the path.
      */
     ctx.prototype.rect = function (x, y, width, height) {
-        // var group = this.__closestGroupOrSvg();
-        // if (group.__hasFill || group.__hasStroke) {
-        //     var element = this.__currentElement = this.__createElement("path", {}, true);
-        //     group.appendChild(element);
-        // }
         this.moveTo(x, y);
         this.lineTo(x+width, y);
         this.lineTo(x+width, y+height);
