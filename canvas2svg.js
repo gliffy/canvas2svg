@@ -486,12 +486,13 @@
     ctx.prototype.save = function () {
         var group = this.__createElement("g");
         var parent = this.__closestGroupOrSvg();
+        var state = this.__getStyleState();
         this.__groupStack.push(parent);
         parent.appendChild(group);
-        this.__currentElement = group;
         this.__applyTransform(group);
+        this.__currentElement = group;
         this.__currentMatrix = new DOMMatrix();
-        this.__stack.push(this.__getStyleState());
+        this.__stack.push(state);
     };
 
     /**
