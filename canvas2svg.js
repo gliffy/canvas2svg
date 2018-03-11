@@ -799,14 +799,15 @@
         var element = this.__currentElement;
         var matrixString = this.__currentMatrix.toString();
 
+		var currentPath = this.__currentDefaultPath;
         var group = this.__closestGroupOrSvg();
         var extras = group.__extras || (group.__extras = {})
-        var currentPath = this.__currentDefaultPath;
 
-        if (extras[paint1] || extras[paint2] && extras.matrixString !== matrixString) {
+		var isPath = element.nodeName === "path";
+		if (extras[paint1] || extras[paint2] && extras.matrixString !== matrixString) {
             var pathHasNotChanged = currentPath === extras.currentPath;
             if (pathHasNotChanged) {
-                if (element.nodeName === "path") {
+                if (isPath) {
                     convertPathToDef.call(this, group);
                 }
                 element = appendUseElement.call(this, group, extras.id);
@@ -815,7 +816,7 @@
                 group.appendChild(element);
                 this.__applyCurrentDefaultPath();
             }
-        } else {
+        } else if (isPath) {
             this.__applyCurrentDefaultPath();
         }
 
