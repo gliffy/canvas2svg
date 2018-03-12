@@ -780,9 +780,6 @@
         if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
             element.setAttribute("fill-rule", "evenodd");
         }
-
-        this.__applyStyleToCurrentElement("fill");
-        this.__applyTransform(element, "fill");
     };
 
     /**
@@ -790,21 +787,18 @@
      */
     ctx.prototype.stroke = function () {
         var element = getOrCreateElementToApplyStyleTo.call(this, "stroke", "fill");
-
-        this.__applyStyleToCurrentElement("stroke");
-        this.__applyTransform(element, "stroke");
     };
 
     function getOrCreateElementToApplyStyleTo(paint1, paint2) {
         var element = this.__currentElement;
         var matrixString = this.__currentMatrix.toString();
 
-		var currentPath = this.__currentDefaultPath;
+        var currentPath = this.__currentDefaultPath;
         var group = this.__closestGroupOrSvg();
         var extras = group.__extras || (group.__extras = {})
 
-		var isPath = element.nodeName === "path";
-		if (extras[paint1] || extras[paint2] && extras.matrixString !== matrixString) {
+        var isPath = element.nodeName === "path";
+        if (extras[paint1] || extras[paint2] && extras.matrixString !== matrixString) {
             var pathHasNotChanged = currentPath === extras.currentPath;
             if (pathHasNotChanged) {
                 if (isPath) {
@@ -826,18 +820,33 @@
         extras.currentPath = currentPath;
         extras.matrixString = matrixString;
 
+        this.__applyStyleToCurrentElement(paint1);
+        this.__applyTransform(element, paint1);
+
         return element;
+    };
+
+    function hashString(string) {
+        /** https://github.com/darkskyapp/string-hash **/
+        let hash = 5381;
+        let i = string.length;
+        while (i) hash = (hash * 33) ^ string.charCodeAt(--i);
+        return hash >>> 0;
     };
 
     function convertPathToDef(group, id) {
         var element = this.__currentElement;
 
-        /** Create <path> <def> **/
-        var id = group.__extras.id = randomString(this.__ids);
-        var link = this.__createElement("path");
-        link.setAttribute("id", id);
-        link.setAttribute("d", element.getAttribute("d"));
-        this.__defs.appendChild(link);
+        /** Create <path> in <defs> **/
+        var extras = group.__extras
+        var id = extras.id
+        if (!id) {
+            id = extras.id = `path-${hashString(extras.currentPath)}`;
+            var link = this.__createElement("path");
+            link.setAttribute("id", id);
+            link.setAttribute("d", element.getAttribute("d"));
+            this.__defs.appendChild(link);
+        }
 
         /** Convert previous <path> to <use> **/
         if (element.nodeName === "path") {
