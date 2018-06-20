@@ -321,6 +321,8 @@
      * @private
      */
     ctx.prototype.__applyStyleState = function (styleState) {
+        if(!styleState)
+            return;
         var keys = Object.keys(styleState), i, key;
         for (i=0; i<keys.length; i++) {
             key = keys[i];
