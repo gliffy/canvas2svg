@@ -504,6 +504,13 @@
     ctx.prototype.restore = function () {
         var element = this.__groupStack.pop();
         var state = this.__stack.pop();
+
+        /** Prune empty group created when running save/restore without any content **/
+        var node = this.__currentElement
+        if (node.nodeName === 'g' && !node.childNodes.length) {
+            node.remove()
+        }
+
         this.__currentElementsToStyle = null;
         this.__currentElement = element || this.__root.childNodes[1];
         this.__applyStyleState(state);
@@ -601,7 +608,7 @@
      */
     ctx.prototype.moveTo = function (x, y) {
         // creates a new subpath with the given point
-		setCurrentpath.call(this, x, y, `M ${x} ${y}`);
+        setCurrentpath.call(this, x, y, `M ${x} ${y}`);
     };
 
     /**
@@ -617,28 +624,28 @@
      * Adds a line to command
      */
     ctx.prototype.lineTo = function (x, y) {
-		setCurrentpath.call(this, x, y, `L ${x} ${y}`);
+        setCurrentpath.call(this, x, y, `L ${x} ${y}`);
     };
 
     /**
      * Add a bezier command
      */
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
-		setCurrentpath.call(this, x, y, `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`);
+        setCurrentpath.call(this, x, y, `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`);
     };
 
     /**
      * Adds a quadratic curve to command
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
-		setCurrentpath.call(this, x, y, `Q ${cpx} ${cpy} ${x} ${y}`);
+        setCurrentpath.call(this, x, y, `Q ${cpx} ${cpy} ${x} ${y}`);
     };
 
     function setCurrentpath(x, y, value)  {
-		this.__currentPosition = {x, y};
-		this.__currentPath || (this.__currentPath = "");
-		this.__currentPath += value;
-	}
+        this.__currentPosition = {x, y};
+        this.__currentPath || (this.__currentPath = "");
+        this.__currentPath += value;
+    }
 
     /**
      * Adds the arcTo to the current path
@@ -781,10 +788,10 @@
                 /** Append <use> element references <def> **/
                 element = appendUseElement.call(this, group, state.id);
             } else {
-				applyCurrentDefaultPath.call(this, true);
+                applyCurrentDefaultPath.call(this, true);
             }
         } else {
-			applyCurrentDefaultPath.call(this, false);
+            applyCurrentDefaultPath.call(this, false);
         }
 
         element.setAttribute("paint-order", `${paintMethod2} ${paintMethod1} markers`);
@@ -799,23 +806,23 @@
         return element;
     };
 
-	function applyCurrentDefaultPath(needsNewPath) {
-		var element = this.__currentElement;
-		var path = this.__currentPath;
-		if (!path) {
-			return
-		}
+    function applyCurrentDefaultPath(needsNewPath) {
+        var element = this.__currentElement;
+        var path = this.__currentPath;
+        if (!path) {
+            return
+        }
 
-		if (needsNewPath || element.nodeName !== "path") {
-			var group = this.__closestGroupOrSvg();
-			element = this.__currentElement = this.__createElement("path", {}, true);
-			group.appendChild(element);
-		}
+        if (needsNewPath || element.nodeName !== "path") {
+            var group = this.__closestGroupOrSvg();
+            element = this.__currentElement = this.__createElement("path", {}, true);
+            group.appendChild(element);
+        }
 
-		element.setAttribute("d", path);
-	};
+        element.setAttribute("d", path);
+    };
 
-	function hashString(string) {
+    function hashString(string) {
         /** https://github.com/darkskyapp/string-hash **/
         let hash = 5381;
         let i = string.length;
@@ -1163,14 +1170,16 @@
      * Generates a ClipPath from the clip command.
      */
     ctx.prototype.clip = function () {
+        if (!this.__currentPath) {
+            return;
+        }
+
         applyCurrentDefaultPath.call(this, false);
 
         var group = this.__closestGroupOrSvg(),
             clipPath = this.__createElement("clipPath"),
             id = randomString(this.__ids),
             newGroup = this.__createElement("g");
-
-        this.__currentElement.remove();
 
         clipPath.setAttribute("id", id);
         clipPath.appendChild(this.__currentElement);
