@@ -589,18 +589,10 @@
      * Create a new Path Element
      */
     ctx.prototype.beginPath = function () {
-        var path, parent;
-
         // Note that there is only one current default path, it is not part of the drawing state.
         // See also: https://html.spec.whatwg.org/multipage/scripting.html#current-default-path
         this.__currentDefaultPath = "";
         this.__currentPosition = {};
-
-        path = this.__createElement("path", {}, true);
-        parent = this.__closestGroupOrSvg();
-        parent.appendChild(path);
-        this.__currentElement = path;
-        this.__applyTransform(parent);
     };
 
     /**
@@ -608,24 +600,26 @@
      * @private
      */
     ctx.prototype.__applyCurrentDefaultPath = function () {
-        var element = this.__currentElement;
-        if (element.nodeName === "path") {
-            element.setAttribute("d", this.__currentDefaultPath);
-        } else {
-            console.error("Attempted to apply path command to node", element.nodeName);
+        var path = this.__currentDefaultPath;
+        if (!path) {
+            return
         }
-    };
 
+        var element = this.__currentElement;
+        // if (element.nodeName !== "path") {
+            var group = this.__closestGroupOrSvg();
+            element = this.__currentElement = this.__createElement("path", {}, true);
+            group.appendChild(element);
+        // }
+
+        element.setAttribute("d", path);
+    };
 
     /**
      * Adds the move command to the current path element,
      * if the currentPathElement is not empty create a new path element
      */
     ctx.prototype.moveTo = function (x, y) {
-        if (this.__currentElement.nodeName !== "path") {
-            this.beginPath();
-        }
-
         // creates a new subpath with the given point
         this.__currentPosition = {x, y};
         this.__currentDefaultPath += `M ${x} ${y}`;
@@ -693,7 +687,7 @@
         if (((x0 === x1) && (y0 === y1))
             || ((x1 === x2) && (y1 === y2))
             || (radius === 0)) {
-            this.lineTo(x1, y1);
+            moveOrLineTo.call(this, x1, y1);
             return;
         }
 
@@ -703,7 +697,7 @@
         var unit_vec_p1_p0 = normalize([x0 - x1, y0 - y1]);
         var unit_vec_p1_p2 = normalize([x2 - x1, y2 - y1]);
         if (unit_vec_p1_p0[0] * unit_vec_p1_p2[1] === unit_vec_p1_p0[1] * unit_vec_p1_p2[0]) {
-            this.lineTo(x1, y1);
+            moveOrLineTo.call(this, x1, y1);
             return;
         }
 
@@ -750,8 +744,8 @@
         var endAngle = getAngle(unit_vec_origin_end_tangent);
 
         // Connect the point (x0, y0) to the start tangent point by a straight line
-        this.lineTo(x + unit_vec_origin_start_tangent[0] * radius,
-                    y + unit_vec_origin_start_tangent[1] * radius);
+        moveOrLineTo(x + unit_vec_origin_start_tangent[0] * radius,
+                     y + unit_vec_origin_start_tangent[1] * radius);
 
         // Connect the start tangent point to the end tangent point by arc
         // and adding the end tangent point to the subpath.
@@ -785,52 +779,41 @@
         var element = getOrCreateElementToApplyStyleTo.call(this, "stroke", "fill");
     };
 
-    function getOrCreateElementToApplyStyleTo(paint1, paint2) {
-        var element = this.__currentElement;
-        var matrixString = this.__currentMatrix.toString();
-
+    function getOrCreateElementToApplyStyleTo(paintMethod1, paintMethod2) {
         var currentPath = this.__currentDefaultPath;
-        var group = this.__closestGroupOrSvg();
-        var extras = group.__extras || (group.__extras = {})
-
-        var isPath = element.nodeName === "path";
-
-        if (extras[paint1] || extras[paint2] && extras.matrixString !== matrixString) {
-            var pathHasNotChanged = currentPath === extras.currentPath;
-            if (pathHasNotChanged) {
-                /** Create <path> definition **/
-                if (isPath) {
-                    convertPathToDef.call(this, group);
-                }
-
-                /** Append <use> element **/
-                element = appendUseElement.call(this, group, extras.id);
-            } else {
-                /** Append <path> **/
-                element = this.__currentElement = this.__createElement("path", {}, true);
-                group.appendChild(element);
-                this.__applyCurrentDefaultPath();
-            }
-        } else if (currentPath) {
-            /** Create <path> element **/
-            if (!isPath) {
-                element = this.__currentElement = this.__createElement("path", {}, true);
-                group.appendChild(element);
-            }
-
-            this.__applyCurrentDefaultPath();
-        } else {
+        if (!currentPath) {
             return
         }
 
-        element.setAttribute("paint-order", `${paint2} ${paint1} markers`);
+        var element = this.__currentElement;
+        var group = this.__closestGroupOrSvg();
+        var matrixString = this.__currentMatrix.toString();
+        var extras = group.__extras || (group.__extras = {})
+        if (extras[paintMethod1] || extras[paintMethod2] && extras.matrixString !== matrixString) {
+            var pathHasNoChange = currentPath === extras.currentPath;
+            if (pathHasNoChange) {
+                /** Convert <path> to <def> **/
+                if (element.nodeName === "path") {
+                    convertPathToDef.call(this, group);
+                }
 
-        extras[paint1] = true;
+                /** Append <use> element references <def> **/
+                element = appendUseElement.call(this, group, extras.id);
+            } else {
+                this.__applyCurrentDefaultPath();
+            }
+        } else {
+            this.__applyCurrentDefaultPath();
+        }
+
+        element.setAttribute("paint-order", `${paintMethod2} ${paintMethod1} markers`);
+
+        extras[paintMethod1] = true;
         extras.currentPath = currentPath;
         extras.matrixString = matrixString;
 
-        this.__applyStyleToCurrentElement(paint1);
-        this.__applyTransform(element, paint1);
+        this.__applyStyleToCurrentElement(paintMethod1);
+        this.__applyTransform(element, paintMethod1);
 
         return element;
     };
@@ -1161,7 +1144,7 @@
             largeArcFlag = diff > Math.PI ? 1 : 0;
         }
 
-        this.lineTo(startX, startY);
+        moveOrLineTo.call(this, startX, startY);
 
         var rx = radius,
             ry = radius,
@@ -1171,13 +1154,19 @@
         this.__currentPosition = {x: endX, y: endY};
     };
 
+    function moveOrLineTo(x, y) {
+        if (this.__currentDefaultPath) {
+            this.lineTo(x, y);
+        } else {
+            this.moveTo(x, y);
+        }
+    }
+
     /**
      * Generates a ClipPath from the clip command.
      */
     ctx.prototype.clip = function () {
-        if (this.__currentElement.nodeName === "path") {
-            this.__applyCurrentDefaultPath();
-        }
+        this.__applyCurrentDefaultPath();
 
         var group = this.__closestGroupOrSvg(),
             clipPath = this.__createElement("clipPath"),
