@@ -627,9 +627,8 @@
         }
 
         // creates a new subpath with the given point
-        var point = point2d(this.__currentMatrix, x, y);
-        this.__currentPosition = point;
-        this.__currentDefaultPath += `M ${point.x} ${point.y}`;
+        this.__currentPosition = {x, y};
+        this.__currentDefaultPath += `M ${x} ${y}`;
     };
 
     /**
@@ -645,30 +644,24 @@
      * Adds a line to command
      */
     ctx.prototype.lineTo = function (x, y) {
-        var point = point2d(this.__currentMatrix, x, y);
-        this.__currentPosition = point;
-        this.__currentDefaultPath += `L ${point.x} ${point.y}`;
+        this.__currentPosition = {x, y};
+        this.__currentDefaultPath += `L ${x} ${y}`;
     };
 
     /**
      * Add a bezier command
      */
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
-        var point = point2d(this.__currentMatrix, x, y);
-        var cp1 = point2d(this.__currentMatrix, cp1x, cp1y);
-        var cp2 = point2d(this.__currentMatrix, cp2x, cp2y);
-        this.__currentPosition = point;
-        this.__currentDefaultPath += `C ${cp1.x} ${cp1.y} ${cp2.x} ${cp2.y} ${x} ${y}`;
+        this.__currentPosition = {x, y};
+        this.__currentDefaultPath += `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
     };
 
     /**
      * Adds a quadratic curve to command
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
-        var point = point2d(this.__currentMatrix, x, y);
-        var cp = point2d(this.__currentMatrix, cpx, cpy);
-        this.__currentPosition = point;
-        this.__currentDefaultPath += `Q ${cp.x} ${cp.y} ${point.x} ${point.y}`;
+        this.__currentPosition = {x, y};
+        this.__currentDefaultPath += `Q ${cpx} ${cpy} ${x} ${y}`;
     };
 
 
@@ -801,20 +794,33 @@
         var extras = group.__extras || (group.__extras = {})
 
         var isPath = element.nodeName === "path";
+
         if (extras[paint1] || extras[paint2] && extras.matrixString !== matrixString) {
             var pathHasNotChanged = currentPath === extras.currentPath;
             if (pathHasNotChanged) {
+                /** Create <path> definition **/
                 if (isPath) {
                     convertPathToDef.call(this, group);
                 }
+
+                /** Append <use> element **/
                 element = appendUseElement.call(this, group, extras.id);
             } else {
+                /** Append <path> **/
                 element = this.__currentElement = this.__createElement("path", {}, true);
                 group.appendChild(element);
                 this.__applyCurrentDefaultPath();
             }
-        } else if (isPath) {
+        } else if (currentPath) {
+            /** Create <path> element **/
+            if (!isPath) {
+                element = this.__currentElement = this.__createElement("path", {}, true);
+                group.appendChild(element);
+            }
+
             this.__applyCurrentDefaultPath();
+        } else {
+            return
         }
 
         element.setAttribute("paint-order", `${paint2} ${paint1} markers`);
@@ -1169,13 +1175,17 @@
      * Generates a ClipPath from the clip command.
      */
     ctx.prototype.clip = function () {
+        if (this.__currentElement.nodeName === "path") {
+            this.__applyCurrentDefaultPath();
+        }
+
         var group = this.__closestGroupOrSvg(),
             clipPath = this.__createElement("clipPath"),
             id =  randomString(this.__ids),
             newGroup = this.__createElement("g");
 
-        this.__applyCurrentDefaultPath();
-        group.removeChild(this.__currentElement);
+        this.__currentElement.remove();
+
         clipPath.setAttribute("id", id);
         clipPath.appendChild(this.__currentElement);
 
