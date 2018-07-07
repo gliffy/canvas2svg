@@ -102,8 +102,7 @@
 
 		/** Load test from location.hash **/
 		if (location.hash) {
-			var id = location.hash.substr(1);
-			setCurrent(id);
+			setCurrent(location.hash);
 		}
 
 		$('#render').on('click', function (event) {
@@ -113,13 +112,17 @@
 			drawExample(drawFunction);
 		});
 
-		$('#select').on('change', function (event) {
+		$('#select').on('change', function () {
 			var id = $(this).val()
 			var example = C2S_EXAMPLES[id];
 			drawExample(example);
-			location.hash = id
-			setCurrent(id)
-		}).trigger('change');
+			setCurrent(`#${id}`);
+			history.replaceState({}, "page 2", `#${id}`);
+		})
+
+		$("#textarea").on('keyup change', function () {
+			history.replaceState({}, "page 2", `#${btoa(this.value)}`);
+		})
 
 		function drawExample(example) {
 			var canvas = document.getElementById('canvas');
@@ -141,22 +144,37 @@
 			svg.appendChild(c2s.getSvg());
 		}
 
-		function setCurrent(id) {
-			var value = C2S_EXAMPLES[id];
-			if (value) {
-				value = value.toString();
-				value = value.slice(value.indexOf("{") + 1, value.lastIndexOf("}"));
-				value = value.split("\n");
-				value = value.reduce((currentValue, value) => {
-					if (value.trim()) {
-						return currentValue + value.substr(4) + "\n"
-					}
-					return currentValue
-				}, "")
-
-				$('#select').val(id);
-				$("#textarea").val(value);
+		function setCurrent(data) {
+			var id = data.substr(1);
+			var fn = C2S_EXAMPLES[id];
+			if (!fn) {
+				try {
+					eval(`window.fn = function (ctx) {${atob(id)}}`);
+					fn = window.fn;
+				} catch (err) {
+					console.error(err);
+					fn = undefined;
+				}
 			}
+
+			var value = fn;
+			if (!value) {
+				return;
+			}
+
+			value = value.toString();
+			value = value.slice(value.indexOf("{") + 1, value.lastIndexOf("}"));
+			value = value.split("\n");
+			value = value.reduce((currentValue, value) => {
+				if (value.trim()) {
+					return currentValue + value + "\n";
+				}
+				return currentValue;
+			}, "");
+
+			$('#select').val(id);
+			$("#textarea").val(value);
+			drawExample(fn);
 		}
 	}());
 </script>
