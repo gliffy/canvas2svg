@@ -591,28 +591,8 @@
     ctx.prototype.beginPath = function () {
         // Note that there is only one current default path, it is not part of the drawing state.
         // See also: https://html.spec.whatwg.org/multipage/scripting.html#current-default-path
-        this.__currentDefaultPath = "";
+        this.__currentPath = "";
         this.__currentPosition = {};
-    };
-
-    /**
-     * Helper function to apply currentDefaultPath to current path element
-     * @private
-     */
-    ctx.prototype.__applyCurrentDefaultPath = function () {
-        var path = this.__currentDefaultPath;
-        if (!path) {
-            return
-        }
-
-        var element = this.__currentElement;
-        // if (element.nodeName !== "path") {
-            var group = this.__closestGroupOrSvg();
-            element = this.__currentElement = this.__createElement("path", {}, true);
-            group.appendChild(element);
-        // }
-
-        element.setAttribute("d", path);
     };
 
     /**
@@ -621,16 +601,15 @@
      */
     ctx.prototype.moveTo = function (x, y) {
         // creates a new subpath with the given point
-        this.__currentPosition = {x, y};
-        this.__currentDefaultPath += `M ${x} ${y}`;
+		setCurrentpath.call(this, x, y, `M ${x} ${y}`);
     };
 
     /**
      * Closes the current path
      */
     ctx.prototype.closePath = function () {
-        if (this.__currentDefaultPath) {
-            this.__currentDefaultPath += "Z";
+        if (this.__currentPath) {
+            this.__currentPath += "Z";
         }
     };
 
@@ -638,26 +617,28 @@
      * Adds a line to command
      */
     ctx.prototype.lineTo = function (x, y) {
-        this.__currentPosition = {x, y};
-        this.__currentDefaultPath += `L ${x} ${y}`;
+		setCurrentpath.call(this, x, y, `L ${x} ${y}`);
     };
 
     /**
      * Add a bezier command
      */
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
-        this.__currentPosition = {x, y};
-        this.__currentDefaultPath += `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
+		setCurrentpath.call(this, x, y, `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`);
     };
 
     /**
      * Adds a quadratic curve to command
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
-        this.__currentPosition = {x, y};
-        this.__currentDefaultPath += `Q ${cpx} ${cpy} ${x} ${y}`;
+		setCurrentpath.call(this, x, y, `Q ${cpx} ${cpy} ${x} ${y}`);
     };
 
+    function setCurrentpath(x, y, value)  {
+		this.__currentPosition = {x, y};
+		this.__currentPath || (this.__currentPath = "");
+		this.__currentPath += value;
+	}
 
     /**
      * Adds the arcTo to the current path
@@ -744,8 +725,8 @@
         var endAngle = getAngle(unit_vec_origin_end_tangent);
 
         // Connect the point (x0, y0) to the start tangent point by a straight line
-        moveOrLineTo(x + unit_vec_origin_start_tangent[0] * radius,
-                     y + unit_vec_origin_start_tangent[1] * radius);
+        moveOrLineTo.call(this, x + unit_vec_origin_start_tangent[0] * radius,
+                                y + unit_vec_origin_start_tangent[1] * radius);
 
         // Connect the start tangent point to the end tangent point by arc
         // and adding the end tangent point to the subpath.
@@ -776,11 +757,11 @@
      * Sets the stroke property on the current element
      */
     ctx.prototype.stroke = function () {
-        var element = getOrCreateElementToApplyStyleTo.call(this, "stroke", "fill");
+        getOrCreateElementToApplyStyleTo.call(this, "stroke", "fill");
     };
 
     function getOrCreateElementToApplyStyleTo(paintMethod1, paintMethod2) {
-        var currentPath = this.__currentDefaultPath;
+        var currentPath = this.__currentPath;
         if (!currentPath) {
             return
         }
@@ -788,9 +769,9 @@
         var element = this.__currentElement;
         var group = this.__closestGroupOrSvg();
         var matrixString = this.__currentMatrix.toString();
-        var extras = group.__extras || (group.__extras = {})
-        if (extras[paintMethod1] || extras[paintMethod2] && extras.matrixString !== matrixString) {
-            var pathHasNoChange = currentPath === extras.currentPath;
+        var state = group.__state || (group.__state = {})
+        if (state[paintMethod1] || state[paintMethod2] && state.matrixString !== matrixString) {
+            var pathHasNoChange = currentPath === state.currentPath;
             if (pathHasNoChange) {
                 /** Convert <path> to <def> **/
                 if (element.nodeName === "path") {
@@ -798,19 +779,19 @@
                 }
 
                 /** Append <use> element references <def> **/
-                element = appendUseElement.call(this, group, extras.id);
+                element = appendUseElement.call(this, group, state.id);
             } else {
-                this.__applyCurrentDefaultPath();
+				applyCurrentDefaultPath.call(this, true);
             }
         } else {
-            this.__applyCurrentDefaultPath();
+			applyCurrentDefaultPath.call(this, false);
         }
 
         element.setAttribute("paint-order", `${paintMethod2} ${paintMethod1} markers`);
 
-        extras[paintMethod1] = true;
-        extras.currentPath = currentPath;
-        extras.matrixString = matrixString;
+        state[paintMethod1] = true;
+        state.currentPath = currentPath;
+        state.matrixString = matrixString;
 
         this.__applyStyleToCurrentElement(paintMethod1);
         this.__applyTransform(element, paintMethod1);
@@ -818,7 +799,23 @@
         return element;
     };
 
-    function hashString(string) {
+	function applyCurrentDefaultPath(needsNewPath) {
+		var element = this.__currentElement;
+		var path = this.__currentPath;
+		if (!path) {
+			return
+		}
+
+		if (needsNewPath || element.nodeName !== "path") {
+			var group = this.__closestGroupOrSvg();
+			element = this.__currentElement = this.__createElement("path", {}, true);
+			group.appendChild(element);
+		}
+
+		element.setAttribute("d", path);
+	};
+
+	function hashString(string) {
         /** https://github.com/darkskyapp/string-hash **/
         let hash = 5381;
         let i = string.length;
@@ -830,7 +827,7 @@
         var element = this.__currentElement;
 
         /** Create <path> in <defs> **/
-        var extras = group.__extras
+        var extras = group.__state
         var id = extras.id
         if (!id) {
             id = extras.id = `path-${hashString(extras.currentPath)}`;
@@ -1150,12 +1147,12 @@
             ry = radius,
             xAxisRotation = 0;
 
-        this.__currentDefaultPath += `A ${rx} ${ry} ${xAxisRotation} ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
+        this.__currentPath += `A ${rx} ${ry} ${xAxisRotation} ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
         this.__currentPosition = {x: endX, y: endY};
     };
 
     function moveOrLineTo(x, y) {
-        if (this.__currentDefaultPath) {
+        if (this.__currentPath) {
             this.lineTo(x, y);
         } else {
             this.moveTo(x, y);
@@ -1166,11 +1163,11 @@
      * Generates a ClipPath from the clip command.
      */
     ctx.prototype.clip = function () {
-        this.__applyCurrentDefaultPath();
+        applyCurrentDefaultPath.call(this, false);
 
         var group = this.__closestGroupOrSvg(),
             clipPath = this.__createElement("clipPath"),
-            id =  randomString(this.__ids),
+            id = randomString(this.__ids),
             newGroup = this.__createElement("g");
 
         this.__currentElement.remove();

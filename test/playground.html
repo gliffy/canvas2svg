@@ -152,8 +152,7 @@
 					eval(`window.fn = function (ctx) {${atob(id)}}`);
 					fn = window.fn;
 				} catch (err) {
-					console.error(err);
-					fn = undefined;
+					fn = C2S_EXAMPLES['arc'];
 				}
 			}
 
