@@ -373,7 +373,6 @@
         for (i = 0; i < keys.length; i++) {
             var key = keys[i]
             style = STYLES[key];
-
             var attributeKey = style.apply
             if (!attributeKey || !attributeKey.includes(paintMethod)) {
                 continue;
@@ -492,9 +491,7 @@
         var state = this.__getStyleState();
         this.__groupStack.push(parent);
         parent.appendChild(group);
-        this.__applyTransform(group);
         this.__currentElement = group;
-        this.__currentMatrix = new DOMMatrix();
         this.__stack.push(state);
     };
 
@@ -506,9 +503,9 @@
         var state = this.__stack.pop();
 
         /** Prune empty group created when running save/restore without any content **/
-        var node = this.__currentElement
+        var node = this.__currentElement;
         if (node.nodeName === 'g' && !node.childNodes.length) {
-            node.remove()
+            node.remove();
         }
 
         this.__currentElementsToStyle = null;
@@ -533,9 +530,9 @@
             }
 
             var styleId = style.__root.getAttribute("id");
-            var linkedReferences = ++style.__linkedReferences
-            var id = `${styleId}-${linkedReferences}`
-            element.setAttribute(paintMethod, `url(#${id})`)
+            var linkedReferences = ++style.__linkedReferences;
+            var id = `${styleId}-${linkedReferences}`;
+            element.setAttribute(paintMethod, `url(#${id})`);
 
             var link = this.__createElement(style.__root.nodeName);
             link.setAttribute("id", id)
@@ -547,10 +544,11 @@
                 link.setAttribute("patternTransform", matrix.toString());
             }
 
-            this.__defs.appendChild(link)
-        } else {
-            element.setAttribute("transform", matrix.toString());
+            this.__defs.appendChild(link);
+            return;
         }
+
+        element.setAttribute("transform", matrix.toString());
     };
 
     /**
@@ -603,15 +601,6 @@
     };
 
     /**
-     * Adds the move command to the current path element,
-     * if the currentPathElement is not empty create a new path element
-     */
-    ctx.prototype.moveTo = function (x, y) {
-        // creates a new subpath with the given point
-        setCurrentpath.call(this, x, y, `M ${x} ${y}`);
-    };
-
-    /**
      * Closes the current path
      */
     ctx.prototype.closePath = function () {
@@ -621,27 +610,43 @@
     };
 
     /**
+     * Adds the move command to the current path element,
+     * if the currentPathElement is not empty create a new path element
+     */
+    ctx.prototype.moveTo = function (x, y) {
+        var point = point2d(this.__currentMatrix, x, y);
+        // creates a new subpath with the given point
+        setCurrentPath.call(this, point.x, point.y, `M ${point.x} ${point.y}`);
+    };
+
+    /**
      * Adds a line to command
      */
     ctx.prototype.lineTo = function (x, y) {
-        setCurrentpath.call(this, x, y, `L ${x} ${y}`);
+        var point = point2d(this.__currentMatrix, x, y);
+        setCurrentPath.call(this, point.x, point.y, `L ${point.x} ${point.y}`);
     };
 
     /**
      * Add a bezier command
      */
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
-        setCurrentpath.call(this, x, y, `C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`);
+        var point = point2d(this.__currentMatrix, x, y);
+        var cp1 = point2d(this.__currentMatrix, cp1x, cp1y);
+        var cp2 = point2d(this.__currentMatrix, cp2x, cp2y);
+        setCurrentPath.call(this, point.x, point.y, `C ${cp1.x} ${cp1.y} ${cp2.x} ${cp2.y} ${point.x} ${point.y}`);
     };
 
     /**
      * Adds a quadratic curve to command
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
-        setCurrentpath.call(this, x, y, `Q ${cpx} ${cpy} ${x} ${y}`);
+        var point = point2d(this.__currentMatrix, x, y);
+        var cp = point2d(this.__currentMatrix, cpx, cpy);
+        setCurrentPath.call(this, point.x, point.y, `Q ${cp.x} ${cp.y} ${point.x} ${point.y}`);
     };
 
-    function setCurrentpath(x, y, value)  {
+    function setCurrentPath(x, y, value)  {
         this.__currentPosition = {x, y};
         this.__currentPath || (this.__currentPath = "");
         this.__currentPath += value;
@@ -770,13 +775,13 @@
     function getOrCreateElementToApplyStyleTo(paintMethod1, paintMethod2) {
         var currentPath = this.__currentPath;
         if (!currentPath) {
-            return
+            return;
         }
 
         var element = this.__currentElement;
         var group = this.__closestGroupOrSvg();
         var matrixString = this.__currentMatrix.toString();
-        var state = group.__state || (group.__state = {})
+        var state = group.__state || (group.__state = {});
         if (state[paintMethod1] || state[paintMethod2] && state.matrixString !== matrixString) {
             var pathHasNoChange = currentPath === state.currentPath;
             if (pathHasNoChange) {
@@ -979,12 +984,14 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createLinearGradient = function (x1, y1, x2, y2) {
+        var point1 = point2d(this.__currentMatrix, x1, y1);
+        var point2 = point2d(this.__currentMatrix, x2, y2);
         var grad = this.__createElement("linearGradient", {
             id : randomString(this.__ids),
-            x1 : x1+"px",
-            x2 : x2+"px",
-            y1 : y1+"px",
-            y2 : y2+"px",
+            x1 : point1.x+"px",
+            x2 : point2.x+"px",
+            y1 : point1.y+"px",
+            y2 : point2.y+"px",
             gradientUnits : "userSpaceOnUse"
         });
         this.__defs.appendChild(grad);
@@ -996,17 +1003,57 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createRadialGradient = function (x0, y0, r0, x1, y1, r1) {
+        var scale = getCurrentScale.call(this)
+        var point0 = point2d(this.__currentMatrix, x0, y0);
+        var point1 = point2d(this.__currentMatrix, x1, y1);
         var grad = this.__createElement("radialGradient", {
             id : randomString(this.__ids),
-            cx : x1+"px",
-            cy : y1+"px",
-            r  : r1+"px",
-            fx : x0+"px",
-            fy : y0+"px",
+            cx : point1.x+"px",
+            cy : point1.y+"px",
+            r  : r1*scale+"px",
+            fx : point0.x+"px",
+            fy : point0.y+"px",
             gradientUnits : "userSpaceOnUse"
         });
         this.__defs.appendChild(grad);
         return new CanvasGradient(grad, this);
+    };
+
+    function getCurrentScale() {
+        // Extracted from: http://hg.mozilla.org/mozilla-central/file/7cb3e9795d04/layout/style/nsStyleAnimation.cpp
+        // MPL 1.1 license
+
+        const matrix = this.__currentMatrix
+        let scaleX = 0
+        let scaleY = 0
+        let skewX = 0
+        let a = matrix.a
+        let b = matrix.b
+        let c = matrix.c
+        let d = matrix.d
+
+        const determinant = a * d - b * c
+        if (determinant) {
+            /** Compute X scale factor and normalize first row **/
+            scaleX = Math.sqrt(a * a + b * b)
+            a /= scaleX
+            b /= scaleX
+
+            /** Compute shear factor and make 2nd row orthogonal to 1st **/
+            skewX = a * c + b * d
+            c -= a * skewX
+            d -= b * skewX
+
+            /** Compute Y scale **/
+            scaleY = Math.sqrt(c * c + d * d)
+
+            /** Negate **/
+            if (determinant < 0) {
+                scaleX = -scaleX
+            }
+        }
+
+        return Math.max(scaleX, scaleY)
     };
 
     /**
