@@ -758,11 +758,12 @@
      */
     ctx.prototype.fill = function () {
         var element = getOrCreateElementToApplyStyleTo.call(this, "fill", "stroke");
-
-        /** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
-        if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
-            element.setAttribute("fill-rule", "evenodd");
-        }
+        if (element) {
+			/** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
+			if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
+				element.setAttribute("fill-rule", "evenodd");
+			}
+		}
     };
 
     /**
