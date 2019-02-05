@@ -215,11 +215,11 @@
      * ctx - existing Context2D to wrap around
      * width - width of your canvas (defaults to 500)
      * height - height of your canvas (defaults to 500)
-     * enableMirroring - enables canvas mirroring (get image data) (defaults to false)
+     * embedImages - enables embedding images as data URLs (defaults to false)
      * document - the document object (defaults to the current document)
      */
     ctx = function (o) {
-        var defaultOptions = { width:500, height:500, enableMirroring : false}, options;
+        var defaultOptions = { width:500, height:500, embedImages : false}, options;
 
         //keep support for this way of calling C2S: new C2S(width,height)
         if (arguments.length > 1) {
@@ -240,7 +240,7 @@
         //setup options
         this.width = options.width || defaultOptions.width;
         this.height = options.height || defaultOptions.height;
-        this.enableMirroring = options.enableMirroring !== undefined ? options.enableMirroring : defaultOptions.enableMirroring;
+        this.embedImages = options.embedImages !== undefined ? options.embedImages : defaultOptions.embedImages;
 
         this.canvas = this;   ///point back to this instance!
         this.__document = options.document || document;
@@ -420,6 +420,70 @@
         } else {
             return this.__closestGroupOrSvg(node.parentNode);
         }
+    };
+
+    function startRequest()
+    {
+        outstandingRequests++;
+    }
+
+    function completeRequest()
+    {
+        outstandingRequests--;
+        if(outstandingRequests == 0)
+        {
+            completeCallbacks.forEach(function(callback)
+                {
+                callback();
+                });
+            completeCallbacks = [];
+        }
+    }
+
+    var outstandingRequests = 0;
+    var completeCallbacks = [];
+    
+    function toDataUrl(url, callback){
+        var xhr = new XMLHttpRequest();
+        xhr.open('get', url);
+        xhr.responseType = 'blob';
+        xhr.onload = function(){
+           var fr = new FileReader();
+    
+           fr.onload = function()
+            {
+                callback(this.result);
+                completeRequest();
+            }; 
+    
+            fr.onerror = function(e)
+            {
+                console.error("error reading image " + url, e);
+                completeRequest();
+            }; 
+
+            fr.readAsDataURL(xhr.response); // async call
+        };
+        xhr.onerror = function(e){
+            console.error("error loading image " + url + " status " + e.target.status);
+            completeRequest();
+        };
+        startRequest();
+        xhr.send();
+     }
+
+    /**
+     * Waits for all outstanding asyc calls such as image download
+     * @param callback - will be called when complete
+     */
+    ctx.prototype.waitForComplete = function (callback)
+    {
+        if(outstandingRequests > 0)
+        {
+            completeCallbacks.push(callback);
+            return;
+        }
+        callback();
     };
 
     /**
@@ -1152,9 +1216,38 @@
                 context.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
                 image = canvas;
             }
+
+            if (image.nodeName === "CANVAS") {
+                svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", image.toDataURL());
+            }
+            else if(this.embedImages)
+            {
+                var orgSvgImage = svgImage;
+                svgImage = this.__createElement("use");
+                svgImage.setAttribute("width", dw);
+                svgImage.setAttribute("height", dh);
+                var imageUrl = image.getAttribute("src");
+                svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#" + imageUrl);
+                //if the image has not been dseen before download and add to defs for reuse
+                if(!this.__ids[imageUrl])
+                {
+                    this.__ids[imageUrl] = imageUrl;
+                    orgSvgImage.setAttribute("id", imageUrl);
+                    this.__defs.appendChild(orgSvgImage);
+                    toDataUrl(image.getAttribute("src"),
+                        function(dataUrl)
+                            {
+                                orgSvgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", dataUrl);
+                            });
+                }
+            }
+            else
+            {
+                svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", image.getAttribute("src"));
+            }
+
             svgImage.setAttribute("transform", translateDirective);
-            svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
-                image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
+
             parent.appendChild(svgImage);
         }
     };

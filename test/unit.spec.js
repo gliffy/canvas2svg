@@ -3,17 +3,17 @@ describe('canvas2svg', function() {
     describe('it can be created', function(){
 
         it("with options", function() {
-            var ctx = new C2S({width:100, height:200, enableMirroring:true});
+            var ctx = new C2S({width:100, height:200, embedImages:true});
             expect(ctx instanceof C2S).to.equal(true);
             expect(ctx.width).to.equal(100);
             expect(ctx.height).to.equal(200);
-            expect(ctx.enableMirroring).to.equal(true);
+            expect(ctx.embedImages).to.equal(true);
 
             var ctx2 = new C2S(300,400);
             expect(ctx2 instanceof C2S).to.equal(true);
             expect(ctx2.width).to.equal(300);
             expect(ctx2.height).to.equal(400);
-            expect(ctx2.enableMirroring).to.equal(false);
+            expect(ctx2.embedImages).to.equal(false);
         });
 
         it("with no options and have defaults", function() {
@@ -21,28 +21,28 @@ describe('canvas2svg', function() {
             expect(ctx instanceof C2S).to.equal(true);
             expect(ctx.width).to.equal(500);
             expect(ctx.height).to.equal(500);
-            expect(ctx.enableMirroring).to.equal(false);
+            expect(ctx.embedImages).to.equal(false);
         });
 
         it("even if it's called as a function", function() {
             //notice the lack of new!
-            var ctx = C2S({width:100, height:200, enableMirroring:true});
+            var ctx = C2S({width:100, height:200, embedImages:true});
             expect(ctx instanceof C2S).to.equal(true);
             expect(ctx.width).to.equal(100);
             expect(ctx.height).to.equal(200);
-            expect(ctx.enableMirroring).to.equal(true);
+            expect(ctx.embedImages).to.equal(true);
 
             var ctx2 = C2S(300,400);
             expect(ctx2 instanceof C2S).to.equal(true);
             expect(ctx2.width).to.equal(300);
             expect(ctx2.height).to.equal(400);
-            expect(ctx2.enableMirroring).to.equal(false);
+            expect(ctx2.embedImages).to.equal(false);
 
             var ctx3 = C2S();
             expect(ctx3 instanceof C2S).to.equal(true);
             expect(ctx3.width).to.equal(500);
             expect(ctx3.height).to.equal(500);
-            expect(ctx3.enableMirroring).to.equal(false);
+            expect(ctx3.embedImages).to.equal(false);
 
         });
 
@@ -357,4 +357,20 @@ describe('canvas2svg', function() {
             expect(svg.querySelector("clipPath > path").getAttribute("d")).to.not.equal(null);
         });
     });
+
+    describe("supports embedded images", function() {
+        it("adds image", function(done) {
+            var ctx = new C2S({embedImages:true});
+            var img = new Image;
+            img.src = "./example/tiger.jpg";
+            ctx.drawImage(img, 0, 0);
+            ctx.waitForComplete(function()
+            {
+                var svg = ctx.getSvg();
+                expect(svg.querySelector("image").getAttribute("xlink:href")).to.not.equal(null);  
+                done();          
+            });            
+        });
+    });    
+
 });
