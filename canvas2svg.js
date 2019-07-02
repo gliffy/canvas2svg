@@ -1146,7 +1146,9 @@
             svgImage.setAttribute("opacity", this.globalAlpha);
             svgImage.setAttribute("preserveAspectRatio", "none");
 
-            if (sx || sy || sw !== image.width || sh !== image.height) {
+            // force embed every images's base64 in SVG by using 'true'
+            // makes SVG self-contained
+            if (true || sx || sy || sw !== image.width || sh !== image.height) {
                 //crop the image using a temporary canvas
                 canvas = this.__document.createElement("canvas");
                 canvas.width = dw;
