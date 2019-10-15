@@ -362,7 +362,7 @@
         for (i = 0; i < keys.length; i++) {
             style = STYLES[keys[i]];
             value = this[keys[i]];
-            if (style.apply) {
+            if (style.apply && value) {
                 //is this a gradient or pattern?
                 if (value instanceof CanvasPattern) {
                     //pattern
