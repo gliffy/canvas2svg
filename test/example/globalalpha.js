@@ -13,7 +13,7 @@ window.C2S_EXAMPLES['globalalpha'] = function(ctx) {
     ctx.globalAlpha = 0.2;
 
     // Draw semi transparent circles
-    for (i=0;i<7;i++){
+    for (var i=0;i<7;i++){
         ctx.beginPath();
         ctx.arc(75,75,10+10*i,0,Math.PI*2,true);
         ctx.fill();

@@ -1,8 +1,8 @@
 window.C2S_EXAMPLES['arc'] = function(ctx) {
 
     // Draw shapes
-    for (i = 0; i < 4; i++) {
-        for (j = 0; j < 3; j++) {
+    for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < 3; j++) {
             ctx.beginPath();
             var x = 25 + j * 50;               // x coordinate
             var y = 25 + i * 50;               // y coordinate
@@ -20,5 +20,5 @@ window.C2S_EXAMPLES['arc'] = function(ctx) {
             }
         }
     }
-    
+
 };
