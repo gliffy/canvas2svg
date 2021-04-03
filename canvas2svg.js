@@ -352,7 +352,7 @@
     ctx.prototype.__applyStyleToCurrentElement = function (type) {
     	var currentElement = this.__currentElement;
     	var currentStyleGroup = this.__currentElementsToStyle;
-    	if (currentStyleGroup) {
+    	if (false && currentStyleGroup) {
     		currentElement.setAttribute(type, "");
     		currentElement = currentStyleGroup.element;
     		currentStyleGroup.children.forEach(function (node) {
