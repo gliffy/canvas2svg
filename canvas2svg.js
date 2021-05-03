@@ -1192,6 +1192,31 @@
     };
 
     /**
+     * SetTransform changes the current transformation matrix to 
+     * the matrix given by the arguments as described below.
+     */
+    ctx.prototype.setTransform = function (a, b, c, d, e, f) {
+        
+    };
+
+    /**
+     * GetTransform Returns a copy of the current transformation matrix,
+     * as a newly created DOMMAtrix Object
+     * 
+     * @returns A DOMMatrix Object
+     */
+    ctx.prototype.getTransform = function () {
+        
+    };
+
+    /**
+     * ResetTransform changes the current transformation matrix to the identity matrix
+     */
+    ctx.prototype.resetTransform = function () {
+
+    };
+
+    /**
      * Not yet implemented
      */
     ctx.prototype.drawFocusRing = function () {};
@@ -1199,7 +1224,6 @@
     ctx.prototype.getImageData = function () {};
     ctx.prototype.putImageData = function () {};
     ctx.prototype.globalCompositeOperation = function () {};
-    ctx.prototype.setTransform = function () {};
 
     //add options for alternative namespace
     if (typeof window === "object") {
