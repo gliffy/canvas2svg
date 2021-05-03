@@ -517,38 +517,6 @@
     };
 
     /**
-     *  scales the current element
-     */
-    ctx.prototype.scale = function (x, y) {
-        if (y === undefined) {
-            y = x;
-        }
-        this.__addTransform(format("scale({x},{y})", {x:x, y:y}));
-    };
-
-    /**
-     * rotates the current element
-     */
-    ctx.prototype.rotate = function (angle) {
-        var degrees = (angle * 180 / Math.PI);
-        this.__addTransform(format("rotate({angle},{cx},{cy})", {angle:degrees, cx:0, cy:0}));
-    };
-
-    /**
-     * translates the current element
-     */
-    ctx.prototype.translate = function (x, y) {
-        this.__addTransform(format("translate({x},{y})", {x:x,y:y}));
-    };
-
-    /**
-     * applies a transform to the current element
-     */
-    ctx.prototype.transform = function (a, b, c, d, e, f) {
-        this.__addTransform(format("matrix({a},{b},{c},{d},{e},{f})", {a:a, b:b, c:c, d:d, e:e, f:f}));
-    };
-
-    /**
      * Create a new Path Element
      */
     ctx.prototype.beginPath = function () {
@@ -1194,8 +1162,15 @@
     /**
      * SetTransform changes the current transformation matrix to 
      * the matrix given by the arguments as described below.
+     * 
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setTransform
      */
     ctx.prototype.setTransform = function (a, b, c, d, e, f) {
+        if (a instanceof DOMMatrix) {
+            this.__transformMatrix = new DOMMatrix([a.a, a.b, a.c, a.d, a.e, a.f]);
+        } else {
+            this.__transformMatrix = new DOMMatrix([a, b, c, d, e, f]);
+        }
     };
 
     /**
@@ -1205,7 +1180,8 @@
      * @returns A DOMMatrix Object
      */
     ctx.prototype.getTransform = function () {
-        
+        let {a, b, c, d, e, f} = this.__transformMatrix;
+        return new DOMMatrix([a, b, c, d, e, f]);
     };
 
     /**
@@ -1215,6 +1191,47 @@
      */
     ctx.prototype.resetTransform = function () {
         this.setTransform(1, 0, 0, 1, 0, 0);
+    };
+
+    /**
+     * Add the scaling transformation described by the arguments to the current transformation matrix. 
+     * 
+     * @param x The x argument represents the scale factor in the horizontal direction 
+     * @param y The y argument represents the scale factor in the vertical direction.
+     * @see https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-scale
+     */
+    ctx.prototype.scale = function (x, y) {        
+        if (y === undefined) {
+            y = x;
+        }
+        // If either of the arguments are infinite or NaN, then return.
+        if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
+            return
+        }
+        let matrix = this.getTransform().scale(x, y);
+        this.setTransform(matrix);
+    };
+
+    /**
+     * rotates the current element
+     */
+    ctx.prototype.rotate = function (angle) {
+        var degrees = (angle * 180 / Math.PI);
+        this.__addTransform(format("rotate({angle},{cx},{cy})", {angle:degrees, cx:0, cy:0}));
+    };
+
+    /**
+     * translates the current element
+     */
+    ctx.prototype.translate = function (x, y) {
+        this.__addTransform(format("translate({x},{y})", {x:x,y:y}));
+    };
+
+    /**
+     * applies a transform to the current element
+     */
+    ctx.prototype.transform = function (a, b, c, d, e, f) {
+        this.__addTransform(format("matrix({a},{b},{c},{d},{e},{f})", {a:a, b:b, c:c, d:d, e:e, f:f}));
     };
 
     /**
