@@ -1196,7 +1196,6 @@
      * the matrix given by the arguments as described below.
      */
     ctx.prototype.setTransform = function (a, b, c, d, e, f) {
-        
     };
 
     /**
@@ -1210,10 +1209,12 @@
     };
 
     /**
-     * ResetTransform changes the current transformation matrix to the identity matrix
+     * ResetTransform resets the current transformation matrix to the identity matrix
+     * 
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/resetTransform
      */
     ctx.prototype.resetTransform = function () {
-
+        this.setTransform(1, 0, 0, 1, 0, 0);
     };
 
     /**
