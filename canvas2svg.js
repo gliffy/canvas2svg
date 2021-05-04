@@ -1213,7 +1213,10 @@
     };
 
     /**
-     * rotates the current element
+     * Rotate adds a rotation to the transformation matrix.
+     * 
+     * @param angle The rotation angle, clockwise in radians. You can use degree * Math.PI / 180 to calculate a radian from a degree.
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/rotate
      */
     ctx.prototype.rotate = function (angle) {
         var degrees = (angle * 180 / Math.PI);
@@ -1221,10 +1224,15 @@
     };
 
     /**
-     * translates the current element
+     * Translate adds a translation transformation to the current matrix.
+     * 
+     * @param x Distance to move in the horizontal direction. Positive values are to the right, and negative to the left.
+     * @param y Distance to move in the vertical direction. Positive values are down, and negative are up.
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/translate
      */
     ctx.prototype.translate = function (x, y) {
-        this.__addTransform(format("translate({x},{y})", {x:x,y:y}));
+        const matrix = this.getTransform().translate(x, y);
+        this.setTransform(matrix);
     };
 
     /**
