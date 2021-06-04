@@ -488,35 +488,6 @@
     };
 
     /**
-     * Helper method to add transform
-     * @private
-     */
-    ctx.prototype.__addTransform = function (t) {
-        //if the current element has siblings, add another group
-        var parent = this.__closestGroupOrSvg();
-        if (parent.childNodes.length > 0) {
-        	if (this.__currentElement.nodeName === "path") {
-        		if (!this.__currentElementsToStyle) this.__currentElementsToStyle = {element: parent, children: []};
-        		this.__currentElementsToStyle.children.push(this.__currentElement)
-        		this.__applyCurrentDefaultPath();
-        	}
-
-            var group = this.__createElement("g");
-            parent.appendChild(group);
-            this.__currentElement = group;
-        }
-
-        var transform = this.__currentElement.getAttribute("transform");
-        if (transform) {
-            transform += " ";
-        } else {
-            transform = "";
-        }
-        transform += t;
-        this.__currentElement.setAttribute("transform", transform);
-    };
-
-    /**
      * Create a new Path Element
      */
     ctx.prototype.beginPath = function () {
@@ -566,7 +537,10 @@
 
         // creates a new subpath with the given point
         this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
+        this.__addPathCommand(format("M {x} {y}", {
+            x: this.__matrixTransform(x, y).x, 
+            y: this.__matrixTransform(x, y).y
+        }));
     };
 
     /**
@@ -584,9 +558,15 @@
     ctx.prototype.lineTo = function (x, y) {
         this.__currentPosition = {x: x, y: y};
         if (this.__currentDefaultPath.indexOf('M') > -1) {
-            this.__addPathCommand(format("L {x} {y}", {x:x, y:y}));
+            this.__addPathCommand(format("L {x} {y}", {
+                x: this.__matrixTransform(x, y).x, 
+                y: this.__matrixTransform(x, y).y
+            }));
         } else {
-            this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
+            this.__addPathCommand(format("M {x} {y}", {
+                x: this.__matrixTransform(x, y).x, 
+                y: this.__matrixTransform(x, y).y
+            }));
         }
     };
 
@@ -596,7 +576,14 @@
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
         this.__currentPosition = {x: x, y: y};
         this.__addPathCommand(format("C {cp1x} {cp1y} {cp2x} {cp2y} {x} {y}",
-            {cp1x:cp1x, cp1y:cp1y, cp2x:cp2x, cp2y:cp2y, x:x, y:y}));
+            {
+                cp1x: this.__matrixTransform(cp1x, cp1y).x,
+                cp1y: this.__matrixTransform(cp1x, cp1y).y,
+                cp2x: this.__matrixTransform(cp2x, cp2y).x,
+                cp2y: this.__matrixTransform(cp2x, cp2y).y,
+                x: this.__matrixTransform(x, y).x, 
+                y: this.__matrixTransform(x, y).y
+            }));
     };
 
     /**
@@ -604,7 +591,12 @@
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
         this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("Q {cpx} {cpy} {x} {y}", {cpx:cpx, cpy:cpy, x:x, y:y}));
+        this.__addPathCommand(format("Q {cpx} {cpy} {x} {y}", {
+            cpx: this.__matrixTransform(cpx, cpy).x, 
+            cpy: this.__matrixTransform(cpx, cpy).y,
+            x: this.__matrixTransform(x, y).x, 
+            y: this.__matrixTransform(x, y).y
+        }));
     };
 
 
@@ -804,9 +796,6 @@
         this.__currentElement = rootGroup;
         //reset __groupStack as all the child group nodes are all removed.
         this.__groupStack = [];
-        if (transform) {
-            this.__addTransform(transform);
-        }
     };
 
     /**
@@ -1005,7 +994,15 @@
 
         this.lineTo(startX, startY);
         this.__addPathCommand(format("A {rx} {ry} {xAxisRotation} {largeArcFlag} {sweepFlag} {endX} {endY}",
-            {rx:radius, ry:radius, xAxisRotation:0, largeArcFlag:largeArcFlag, sweepFlag:sweepFlag, endX:endX, endY:endY}));
+            {
+                rx:radius,
+                ry:radius,
+                xAxisRotation:0,
+                largeArcFlag:largeArcFlag,
+                sweepFlag:sweepFlag,
+                endX: this.__matrixTransform(endX, endY).x, 
+                endY: this.__matrixTransform(endX, endY).y
+            }));
 
         this.__currentPosition = {x: endX, y: endY};
     };
@@ -1217,10 +1214,18 @@
      * 
      * @param angle The rotation angle, clockwise in radians. You can use degree * Math.PI / 180 to calculate a radian from a degree.
      * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/rotate
+     * @see https://www.w3.org/TR/css-transforms-1
      */
     ctx.prototype.rotate = function (angle) {
-        var degrees = (angle * 180 / Math.PI);
-        this.__addTransform(format("rotate({angle},{cx},{cy})", {angle:degrees, cx:0, cy:0}));
+        let matrix = this.getTransform().multiply(new DOMMatrix([
+            Maht.cos(angle),
+            Math.sin(angle),
+            -Math.sin(angle),
+            Math.cos(angle),
+            0,
+            0
+        ]))
+        this.setTransform(matrix);
     };
 
     /**
@@ -1236,11 +1241,19 @@
     };
 
     /**
-     * applies a transform to the current element
+     * Transform multiplies the current transformation with the matrix described by the arguments of this method. 
+     * This lets you scale, rotate, translate (move), and skew the context.
+     * 
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/transform
      */
     ctx.prototype.transform = function (a, b, c, d, e, f) {
-        this.__addTransform(format("matrix({a},{b},{c},{d},{e},{f})", {a:a, b:b, c:c, d:d, e:e, f:f}));
+        const matrix = this.getTransform().multiply(new DOMMatrix([a, b, c, d, e, f]));
+        this.setTransform(matrix);
     };
+
+    ctx.prototype.__matrixTransform = function(x, y) {
+        return new DOMPoint(x, y).matrixTransform(this.__transformMatrix)
+    }
 
     /**
      * Not yet implemented
