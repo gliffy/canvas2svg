@@ -276,6 +276,9 @@
         //also add a group child. the svg element can't use the transform attribute
         this.__currentElement = this.__document.createElementNS("http://www.w3.org/2000/svg", "g");
         this.__root.appendChild(this.__currentElement);
+
+        // init transformation matrix
+        this.resetTransform();
     };
 
 
@@ -341,6 +344,14 @@
         }
         return styleState;
     };
+
+    /**
+     * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
+     */
+    ctx.prototype.__applyTransformation = function (element) {
+        const {a, b, c, d, e, f} = this.getTransform();
+        element.setAttribute('transform', `matrix(${a} ${b} ${c} ${d} ${e} ${f})`)
+    }
 
     /**
      * Apples the current styles to the current SVG element. On "ctx.fill" or "ctx.stroke"
@@ -753,6 +764,7 @@
         parent = this.__closestGroupOrSvg();
         parent.appendChild(rect);
         this.__currentElement = rect;
+        this.__applyTransformation(rect);
         this.__applyStyleToCurrentElement("fill");
     };
 
@@ -774,6 +786,7 @@
         parent = this.__closestGroupOrSvg();
         parent.appendChild(rect);
         this.__currentElement = rect;
+        this.__applyTransformation(rect);
         this.__applyStyleToCurrentElement("stroke");
     };
 
@@ -784,8 +797,6 @@
      * 2. remove all the childNodes of the root g element
      */
     ctx.prototype.__clearCanvas = function () {
-        var current = this.__closestGroupOrSvg(),
-            transform = current.getAttribute("transform");
         var rootGroup = this.__root.childNodes[1];
         var childNodes = rootGroup.childNodes;
         for (var i = childNodes.length - 1; i >= 0; i--) {
@@ -815,6 +826,7 @@
             height : height,
             fill : "#FFFFFF"
         }, true);
+        this.__applyTransformation(rect)
         parent.appendChild(rect);
     };
 
@@ -925,6 +937,7 @@
 
         textElement.appendChild(this.__document.createTextNode(text));
         this.__currentElement = textElement;
+        this.__applyTransformation(textElement);
         this.__applyStyleToCurrentElement(action);
         parent.appendChild(this.__wrapTextLink(font,textElement));
     };
@@ -1218,7 +1231,7 @@
      */
     ctx.prototype.rotate = function (angle) {
         let matrix = this.getTransform().multiply(new DOMMatrix([
-            Maht.cos(angle),
+            Math.cos(angle),
             Math.sin(angle),
             -Math.sin(angle),
             Math.cos(angle),

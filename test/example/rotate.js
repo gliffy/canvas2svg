@@ -11,4 +11,6 @@ window.C2S_EXAMPLES['rotate'] = function(ctx) {
     // Rotated rectangle
     ctx.fillStyle = 'red';
     ctx.fillRect(80, 60, 140, 30);
+
+    ctx.resetTransform();
 }
