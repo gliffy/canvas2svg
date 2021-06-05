@@ -348,8 +348,8 @@
     /**
      * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
      */
-    ctx.prototype.__applyTransformation = function (element) {
-        const {a, b, c, d, e, f} = this.getTransform();
+    ctx.prototype.__applyTransformation = function (element, matrix) {
+        const {a, b, c, d, e, f} = matrix || this.getTransform();
         element.setAttribute('transform', `matrix(${a} ${b} ${c} ${d} ${e} ${f})`)
     }
 
@@ -813,10 +813,13 @@
      * "Clears" a canvas by just drawing a white rectangle in the current group.
      */
     ctx.prototype.clearRect = function (x, y, width, height) {
-        //clear entire canvas
-        if (x === 0 && y === 0 && width === this.width && height === this.height) {
-            this.__clearCanvas();
-            return;
+        let {a, b, c, d, e, f} = this.getTransform();
+        if (JSON.stringify([a, b, c, d, e, f]) === JSON.stringify([1, 0, 0, 1, 0, 0])) {
+            //clear entire canvas
+            if (x === 0 && y === 0 && width === this.width && height === this.height) {
+                this.__clearCanvas();
+                return;
+            }
         }
         var rect, parent = this.__closestGroupOrSvg();
         rect = this.__createElement("rect", {
@@ -1088,7 +1091,7 @@
 
         parent = this.__closestGroupOrSvg();
         currentElement = this.__currentElement;
-        var translateDirective = "translate(" + dx + ", " + dy + ")";
+        const matrix = this.getTransform().translate(dx, dy);
         if (image instanceof ctx) {
             //canvas2svg mock canvas context. In the future we may want to clone nodes instead.
             //also I'm currently ignoring dw, dh, sw, sh, sx, sy for a mock context.
@@ -1102,15 +1105,7 @@
                 }
                 group = svg.childNodes[1];
                 if (group) {
-                    //save original transform
-                    var originTransform = group.getAttribute("transform");
-                    var transformDirective;
-                    if (originTransform) {
-                        transformDirective = originTransform+" "+translateDirective;
-                    } else {
-                        transformDirective = translateDirective;
-                    }
-                    group.setAttribute("transform", transformDirective);
+                    this.__applyTransformation(group, matrix);
                     parent.appendChild(group);
                 }
             }
@@ -1130,7 +1125,7 @@
                 context.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
                 image = canvas;
             }
-            svgImage.setAttribute("transform", translateDirective);
+            this.__applyTransformation(svgImage, matrix);
             svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
                 image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
             parent.appendChild(svgImage);
