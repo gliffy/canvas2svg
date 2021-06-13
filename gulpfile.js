@@ -35,4 +35,4 @@ gulp.task('bump', function() {
     .pipe(gulp.dest('./'));
 });
 
-gulp.task('default', ['update_examples']);
+// gulp.task('default', ['update_examples']);

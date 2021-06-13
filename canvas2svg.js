@@ -276,6 +276,9 @@
         //also add a group child. the svg element can't use the transform attribute
         this.__currentElement = this.__document.createElementNS("http://www.w3.org/2000/svg", "g");
         this.__root.appendChild(this.__currentElement);
+
+        // init transformation matrix
+        this.resetTransform();
     };
 
 
@@ -341,6 +344,14 @@
         }
         return styleState;
     };
+
+    /**
+     * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
+     */
+    ctx.prototype.__applyTransformation = function (element, matrix) {
+        const {a, b, c, d, e, f} = matrix || this.getTransform();
+        element.setAttribute('transform', `matrix(${a} ${b} ${c} ${d} ${e} ${f})`)
+    }
 
     /**
      * Apples the current styles to the current SVG element. On "ctx.fill" or "ctx.stroke"
@@ -488,67 +499,6 @@
     };
 
     /**
-     * Helper method to add transform
-     * @private
-     */
-    ctx.prototype.__addTransform = function (t) {
-        //if the current element has siblings, add another group
-        var parent = this.__closestGroupOrSvg();
-        if (parent.childNodes.length > 0) {
-        	if (this.__currentElement.nodeName === "path") {
-        		if (!this.__currentElementsToStyle) this.__currentElementsToStyle = {element: parent, children: []};
-        		this.__currentElementsToStyle.children.push(this.__currentElement)
-        		this.__applyCurrentDefaultPath();
-        	}
-
-            var group = this.__createElement("g");
-            parent.appendChild(group);
-            this.__currentElement = group;
-        }
-
-        var transform = this.__currentElement.getAttribute("transform");
-        if (transform) {
-            transform += " ";
-        } else {
-            transform = "";
-        }
-        transform += t;
-        this.__currentElement.setAttribute("transform", transform);
-    };
-
-    /**
-     *  scales the current element
-     */
-    ctx.prototype.scale = function (x, y) {
-        if (y === undefined) {
-            y = x;
-        }
-        this.__addTransform(format("scale({x},{y})", {x:x, y:y}));
-    };
-
-    /**
-     * rotates the current element
-     */
-    ctx.prototype.rotate = function (angle) {
-        var degrees = (angle * 180 / Math.PI);
-        this.__addTransform(format("rotate({angle},{cx},{cy})", {angle:degrees, cx:0, cy:0}));
-    };
-
-    /**
-     * translates the current element
-     */
-    ctx.prototype.translate = function (x, y) {
-        this.__addTransform(format("translate({x},{y})", {x:x,y:y}));
-    };
-
-    /**
-     * applies a transform to the current element
-     */
-    ctx.prototype.transform = function (a, b, c, d, e, f) {
-        this.__addTransform(format("matrix({a},{b},{c},{d},{e},{f})", {a:a, b:b, c:c, d:d, e:e, f:f}));
-    };
-
-    /**
      * Create a new Path Element
      */
     ctx.prototype.beginPath = function () {
@@ -598,7 +548,10 @@
 
         // creates a new subpath with the given point
         this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
+        this.__addPathCommand(format("M {x} {y}", {
+            x: this.__matrixTransform(x, y).x, 
+            y: this.__matrixTransform(x, y).y
+        }));
     };
 
     /**
@@ -616,9 +569,15 @@
     ctx.prototype.lineTo = function (x, y) {
         this.__currentPosition = {x: x, y: y};
         if (this.__currentDefaultPath.indexOf('M') > -1) {
-            this.__addPathCommand(format("L {x} {y}", {x:x, y:y}));
+            this.__addPathCommand(format("L {x} {y}", {
+                x: this.__matrixTransform(x, y).x, 
+                y: this.__matrixTransform(x, y).y
+            }));
         } else {
-            this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
+            this.__addPathCommand(format("M {x} {y}", {
+                x: this.__matrixTransform(x, y).x, 
+                y: this.__matrixTransform(x, y).y
+            }));
         }
     };
 
@@ -628,7 +587,14 @@
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
         this.__currentPosition = {x: x, y: y};
         this.__addPathCommand(format("C {cp1x} {cp1y} {cp2x} {cp2y} {x} {y}",
-            {cp1x:cp1x, cp1y:cp1y, cp2x:cp2x, cp2y:cp2y, x:x, y:y}));
+            {
+                cp1x: this.__matrixTransform(cp1x, cp1y).x,
+                cp1y: this.__matrixTransform(cp1x, cp1y).y,
+                cp2x: this.__matrixTransform(cp2x, cp2y).x,
+                cp2y: this.__matrixTransform(cp2x, cp2y).y,
+                x: this.__matrixTransform(x, y).x, 
+                y: this.__matrixTransform(x, y).y
+            }));
     };
 
     /**
@@ -636,7 +602,12 @@
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
         this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("Q {cpx} {cpy} {x} {y}", {cpx:cpx, cpy:cpy, x:x, y:y}));
+        this.__addPathCommand(format("Q {cpx} {cpy} {x} {y}", {
+            cpx: this.__matrixTransform(cpx, cpy).x, 
+            cpy: this.__matrixTransform(cpx, cpy).y,
+            x: this.__matrixTransform(x, y).x, 
+            y: this.__matrixTransform(x, y).y
+        }));
     };
 
 
@@ -793,6 +764,7 @@
         parent = this.__closestGroupOrSvg();
         parent.appendChild(rect);
         this.__currentElement = rect;
+        this.__applyTransformation(rect);
         this.__applyStyleToCurrentElement("fill");
     };
 
@@ -814,6 +786,7 @@
         parent = this.__closestGroupOrSvg();
         parent.appendChild(rect);
         this.__currentElement = rect;
+        this.__applyTransformation(rect);
         this.__applyStyleToCurrentElement("stroke");
     };
 
@@ -824,8 +797,6 @@
      * 2. remove all the childNodes of the root g element
      */
     ctx.prototype.__clearCanvas = function () {
-        var current = this.__closestGroupOrSvg(),
-            transform = current.getAttribute("transform");
         var rootGroup = this.__root.childNodes[1];
         var childNodes = rootGroup.childNodes;
         for (var i = childNodes.length - 1; i >= 0; i--) {
@@ -836,19 +807,19 @@
         this.__currentElement = rootGroup;
         //reset __groupStack as all the child group nodes are all removed.
         this.__groupStack = [];
-        if (transform) {
-            this.__addTransform(transform);
-        }
     };
 
     /**
      * "Clears" a canvas by just drawing a white rectangle in the current group.
      */
     ctx.prototype.clearRect = function (x, y, width, height) {
-        //clear entire canvas
-        if (x === 0 && y === 0 && width === this.width && height === this.height) {
-            this.__clearCanvas();
-            return;
+        let {a, b, c, d, e, f} = this.getTransform();
+        if (JSON.stringify([a, b, c, d, e, f]) === JSON.stringify([1, 0, 0, 1, 0, 0])) {
+            //clear entire canvas
+            if (x === 0 && y === 0 && width === this.width && height === this.height) {
+                this.__clearCanvas();
+                return;
+            }
         }
         var rect, parent = this.__closestGroupOrSvg();
         rect = this.__createElement("rect", {
@@ -858,6 +829,7 @@
             height : height,
             fill : "#FFFFFF"
         }, true);
+        this.__applyTransformation(rect)
         parent.appendChild(rect);
     };
 
@@ -968,6 +940,7 @@
 
         textElement.appendChild(this.__document.createTextNode(text));
         this.__currentElement = textElement;
+        this.__applyTransformation(textElement);
         this.__applyStyleToCurrentElement(action);
         parent.appendChild(this.__wrapTextLink(font,textElement));
     };
@@ -1037,7 +1010,15 @@
 
         this.lineTo(startX, startY);
         this.__addPathCommand(format("A {rx} {ry} {xAxisRotation} {largeArcFlag} {sweepFlag} {endX} {endY}",
-            {rx:radius, ry:radius, xAxisRotation:0, largeArcFlag:largeArcFlag, sweepFlag:sweepFlag, endX:endX, endY:endY}));
+            {
+                rx:radius,
+                ry:radius,
+                xAxisRotation:0,
+                largeArcFlag:largeArcFlag,
+                sweepFlag:sweepFlag,
+                endX: this.__matrixTransform(endX, endY).x, 
+                endY: this.__matrixTransform(endX, endY).y
+            }));
 
         this.__currentPosition = {x: endX, y: endY};
     };
@@ -1110,7 +1091,7 @@
 
         parent = this.__closestGroupOrSvg();
         currentElement = this.__currentElement;
-        var translateDirective = "translate(" + dx + ", " + dy + ")";
+        const matrix = this.getTransform().translate(dx, dy);
         if (image instanceof ctx) {
             //canvas2svg mock canvas context. In the future we may want to clone nodes instead.
             //also I'm currently ignoring dw, dh, sw, sh, sx, sy for a mock context.
@@ -1124,15 +1105,7 @@
                 }
                 group = svg.childNodes[1];
                 if (group) {
-                    //save original transform
-                    var originTransform = group.getAttribute("transform");
-                    var transformDirective;
-                    if (originTransform) {
-                        transformDirective = originTransform+" "+translateDirective;
-                    } else {
-                        transformDirective = translateDirective;
-                    }
-                    group.setAttribute("transform", transformDirective);
+                    this.__applyTransformation(group, matrix);
                     parent.appendChild(group);
                 }
             }
@@ -1152,7 +1125,7 @@
                 context.drawImage(image, sx, sy, sw, sh, 0, 0, dw, dh);
                 image = canvas;
             }
-            svgImage.setAttribute("transform", translateDirective);
+            this.__applyTransformation(svgImage, matrix);
             svgImage.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
                 image.nodeName === "CANVAS" ? image.toDataURL() : image.getAttribute("src"));
             parent.appendChild(svgImage);
@@ -1192,6 +1165,105 @@
     };
 
     /**
+     * SetTransform changes the current transformation matrix to 
+     * the matrix given by the arguments as described below.
+     * 
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/setTransform
+     */
+    ctx.prototype.setTransform = function (a, b, c, d, e, f) {
+        if (a instanceof DOMMatrix) {
+            this.__transformMatrix = new DOMMatrix([a.a, a.b, a.c, a.d, a.e, a.f]);
+        } else {
+            this.__transformMatrix = new DOMMatrix([a, b, c, d, e, f]);
+        }
+    };
+
+    /**
+     * GetTransform Returns a copy of the current transformation matrix,
+     * as a newly created DOMMAtrix Object
+     * 
+     * @returns A DOMMatrix Object
+     */
+    ctx.prototype.getTransform = function () {
+        let {a, b, c, d, e, f} = this.__transformMatrix;
+        return new DOMMatrix([a, b, c, d, e, f]);
+    };
+
+    /**
+     * ResetTransform resets the current transformation matrix to the identity matrix
+     * 
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/resetTransform
+     */
+    ctx.prototype.resetTransform = function () {
+        this.setTransform(1, 0, 0, 1, 0, 0);
+    };
+
+    /**
+     * Add the scaling transformation described by the arguments to the current transformation matrix. 
+     * 
+     * @param x The x argument represents the scale factor in the horizontal direction 
+     * @param y The y argument represents the scale factor in the vertical direction.
+     * @see https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-scale
+     */
+    ctx.prototype.scale = function (x, y) {        
+        if (y === undefined) {
+            y = x;
+        }
+        // If either of the arguments are infinite or NaN, then return.
+        if (isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
+            return
+        }
+        let matrix = this.getTransform().scale(x, y);
+        this.setTransform(matrix);
+    };
+
+    /**
+     * Rotate adds a rotation to the transformation matrix.
+     * 
+     * @param angle The rotation angle, clockwise in radians. You can use degree * Math.PI / 180 to calculate a radian from a degree.
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/rotate
+     * @see https://www.w3.org/TR/css-transforms-1
+     */
+    ctx.prototype.rotate = function (angle) {
+        let matrix = this.getTransform().multiply(new DOMMatrix([
+            Math.cos(angle),
+            Math.sin(angle),
+            -Math.sin(angle),
+            Math.cos(angle),
+            0,
+            0
+        ]))
+        this.setTransform(matrix);
+    };
+
+    /**
+     * Translate adds a translation transformation to the current matrix.
+     * 
+     * @param x Distance to move in the horizontal direction. Positive values are to the right, and negative to the left.
+     * @param y Distance to move in the vertical direction. Positive values are down, and negative are up.
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/translate
+     */
+    ctx.prototype.translate = function (x, y) {
+        const matrix = this.getTransform().translate(x, y);
+        this.setTransform(matrix);
+    };
+
+    /**
+     * Transform multiplies the current transformation with the matrix described by the arguments of this method. 
+     * This lets you scale, rotate, translate (move), and skew the context.
+     * 
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/transform
+     */
+    ctx.prototype.transform = function (a, b, c, d, e, f) {
+        const matrix = this.getTransform().multiply(new DOMMatrix([a, b, c, d, e, f]));
+        this.setTransform(matrix);
+    };
+
+    ctx.prototype.__matrixTransform = function(x, y) {
+        return new DOMPoint(x, y).matrixTransform(this.__transformMatrix)
+    }
+
+    /**
      * Not yet implemented
      */
     ctx.prototype.drawFocusRing = function () {};
@@ -1199,7 +1271,6 @@
     ctx.prototype.getImageData = function () {};
     ctx.prototype.putImageData = function () {};
     ctx.prototype.globalCompositeOperation = function () {};
-    ctx.prototype.setTransform = function () {};
 
     //add options for alternative namespace
     if (typeof window === "object") {
