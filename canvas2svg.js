@@ -503,6 +503,7 @@
 
             var group = this.__createElement("g");
             parent.appendChild(group);
+	    group.appendChild(this.__currentElement);
             this.__currentElement = group;
         }
 
