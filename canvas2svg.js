@@ -16,15 +16,6 @@
 
     var STYLES, ctx, CanvasGradient, CanvasPattern, namedEntities;
 
-    //helper function to format a string
-    function format(str, args) {
-        var keys = Object.keys(args), i;
-        for (i=0; i<keys.length; i++) {
-            str = str.replace(new RegExp("\\{" + keys[i] + "\\}", "gi"), args[keys[i]]);
-        }
-        return str;
-    }
-
     //helper function that generates a random string
     function randomString(holder) {
         var chars, randomstring, i;
@@ -184,6 +175,7 @@
     CanvasGradient = function (gradientNode, ctx) {
         this.__root = gradientNode;
         this.__ctx = ctx;
+        this.__linkedReferences = 0;
     };
 
     /**
@@ -196,7 +188,10 @@
             //separate alpha value, since webkit can't handle it
             regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
             matches = regex.exec(color);
-            stop.setAttribute("stop-color", format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
+            var r = matches[1],
+                g = matches[2],
+                b = matches[3];
+            stop.setAttribute("stop-color", `rgb(${r},${g},${b})`);
             stop.setAttribute("stop-opacity", matches[4]);
         } else {
             stop.setAttribute("stop-color", color);
@@ -207,6 +202,7 @@
     CanvasPattern = function (pattern, ctx) {
         this.__root = pattern;
         this.__ctx = ctx;
+        this.__linkedReferences = 0;
     };
 
     /**
@@ -254,30 +250,39 @@
             this.__ctx = this.__canvas.getContext("2d");
         }
 
+        this.__globalMatrix = new DOMMatrix();
+        this.__currentMatrix = new DOMMatrix();
+
         this.__setDefaultStyles();
         this.__stack = [this.__getStyleState()];
         this.__groupStack = [];
 
         //the root svg element
-        this.__root = this.__document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        this.__root.setAttribute("version", 1.1);
-        this.__root.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-        this.__root.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        this.__root.setAttribute("width", this.width);
-        this.__root.setAttribute("height", this.height);
+        var svg = this.__root = createElementNS(this, "svg");
+        svg.setAttribute("version", 1.1);
+        svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+        svg.setAttribute("width", this.width);
+        svg.setAttribute("height", this.height);
 
         //make sure we don't generate the same ids in defs
         this.__ids = {};
 
         //defs tag
-        this.__defs = this.__document.createElementNS("http://www.w3.org/2000/svg", "defs");
-        this.__root.appendChild(this.__defs);
+        this.__defs = createElementNS(this, "defs");
+        svg.appendChild(this.__defs);
 
         //also add a group child. the svg element can't use the transform attribute
-        this.__currentElement = this.__document.createElementNS("http://www.w3.org/2000/svg", "g");
-        this.__root.appendChild(this.__currentElement);
+        var element = createElementNS(this, "g")
+        svg.appendChild(element);
+        this.__currentElement = element;
     };
 
+    /**
+     * Identifying marker.
+     * @private
+     */
+    ctx.prototype.__isCanvas2SVG = true
 
     /**
      * Creates the specified svg element
@@ -288,13 +293,14 @@
             properties = {};
         }
 
-        var element = this.__document.createElementNS("http://www.w3.org/2000/svg", elementName),
+        var element = createElementNS(this, elementName),
             keys = Object.keys(properties), i, key;
         if (resetFill) {
             //if fill or stroke is not specified, the svg element should not display. By default SVG's fill is black.
             element.setAttribute("fill", "none");
             element.setAttribute("stroke", "none");
         }
+
         for (i=0; i<keys.length; i++) {
             key = keys[i];
             element.setAttribute(key, properties[key]);
@@ -324,8 +330,12 @@
         var keys = Object.keys(styleState), i, key;
         for (i=0; i<keys.length; i++) {
             key = keys[i];
+            if (key === 'transform') {
+                continue;
+            }
             this[key] = styleState[key];
         }
+        this.__currentMatrix = new DOMMatrix(styleState.transform);
     };
 
     /**
@@ -339,71 +349,81 @@
             key = keys[i];
             styleState[key] = this[key];
         }
+        styleState.transform = new DOMMatrix(this.__currentMatrix);
         return styleState;
     };
 
     /**
      * Apples the current styles to the current SVG element. On "ctx.fill" or "ctx.stroke"
-     * @param type
+     * @param paintMethod
      * @private
      */
-    ctx.prototype.__applyStyleToCurrentElement = function (type) {
-    	var currentElement = this.__currentElement;
-    	var currentStyleGroup = this.__currentElementsToStyle;
-    	if (currentStyleGroup) {
-    		currentElement.setAttribute(type, "");
-    		currentElement = currentStyleGroup.element;
-    		currentStyleGroup.children.forEach(function (node) {
-    			node.setAttribute(type, "");
-    		})
-    	}
+    ctx.prototype.__applyStyleToCurrentElement = function (paintMethod) {
+        var currentElement = this.__currentElement;
+        var currentStyleGroup = this.__currentElementsToStyle;
+        if (currentStyleGroup) {
+            currentElement.setAttribute(paintMethod, "");
+            currentElement = currentStyleGroup.element;
+            currentStyleGroup.children.forEach(function (node) {
+                node.setAttribute(paintMethod, "");
+            })
+        }
 
         var keys = Object.keys(STYLES), i, style, value, id, regex, matches;
         for (i = 0; i < keys.length; i++) {
-            style = STYLES[keys[i]];
-            value = this[keys[i]];
-            if (style.apply) {
-                //is this a gradient or pattern?
-                if (value instanceof CanvasPattern) {
-                    //pattern
-                    if (value.__ctx) {
-                        //copy over defs
-                        while(value.__ctx.__defs.childNodes.length) {
-                            id = value.__ctx.__defs.childNodes[0].getAttribute("id");
-                            this.__ids[id] = id;
-                            this.__defs.appendChild(value.__ctx.__defs.childNodes[0]);
-                        }
+            var key = keys[i]
+            style = STYLES[key];
+            var attributeKey = style.apply
+            if (!attributeKey || !attributeKey.includes(paintMethod)) {
+                continue;
+            }
+
+            value = this[key];
+            if (value instanceof CanvasPattern) {
+                //pattern
+                if (value.__ctx) {
+                    //copy over defs
+                    var childNodes = value.__ctx.__defs.childNodes
+                    for (var j = 0; j < childNodes.length; j ++) {
+                        var child = childNodes[j];
+                        var id = child.getAttribute("id");
+                        this.__ids[id] = id;
+                        this.__defs.appendChild(child);
                     }
-                    currentElement.setAttribute(style.apply, format("url(#{id})", {id:value.__root.getAttribute("id")}));
                 }
-                else if (value instanceof CanvasGradient) {
-                    //gradient
-                    currentElement.setAttribute(style.apply, format("url(#{id})", {id:value.__root.getAttribute("id")}));
-                } else if (style.apply.indexOf(type)!==-1 && style.svg !== value) {
-                    if ((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf("rgba") !== -1) {
-                        //separate alpha value, since illustrator can't handle it
-                        regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
-                        matches = regex.exec(value);
-                        currentElement.setAttribute(style.svgAttr, format("rgb({r},{g},{b})", {r:matches[1], g:matches[2], b:matches[3]}));
-                        //should take globalAlpha here
-                        var opacity = matches[4];
-                        var globalAlpha = this.globalAlpha;
-                        if (globalAlpha != null) {
-                            opacity *= globalAlpha;
-                        }
-                        currentElement.setAttribute(style.svgAttr+"-opacity", opacity);
-                    } else {
-                        var attr = style.svgAttr;
-                        if (keys[i] === 'globalAlpha') {
-                            attr = type+'-'+style.svgAttr;
-                            if (currentElement.getAttribute(attr)) {
-                                 //fill-opacity or stroke-opacity has already been set by stroke or fill.
-                                continue;
-                            }
-                        }
-                        //otherwise only update attribute if right type, and not svg default
-                        currentElement.setAttribute(attr, value);
+                var id = value.__root.getAttribute("id")
+                currentElement.setAttribute(attributeKey, `url(#${id})`);
+            } else if (value instanceof CanvasGradient) {
+                //gradient
+                var id = value.__root.getAttribute("id")
+                currentElement.setAttribute(attributeKey, `url(#${id})`);
+            } else if (attributeKey.indexOf(paintMethod)!==-1 && style.svg !== value) {
+                if ((style.svgAttr === "stroke" || style.svgAttr === "fill") && value.indexOf && value.indexOf("rgba") !== -1) {
+                    //separate alpha value, since illustrator can't handle it
+                    regex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/gi;
+                    matches = regex.exec(value);
+                    var r = matches[1],
+                        g = matches[2],
+                        b = matches[3];
+                    currentElement.setAttribute(style.svgAttr, `rgb(${r},${g},${b})`);
+                    //should take globalAlpha here
+                    var opacity = matches[4];
+                    var globalAlpha = this.globalAlpha;
+                    if (globalAlpha != null) {
+                        opacity *= globalAlpha;
                     }
+                    currentElement.setAttribute(style.svgAttr+"-opacity", opacity);
+                } else {
+                    var attr = style.svgAttr;
+                    if (keys[i] === 'globalAlpha') {
+                        attr = paintMethod+'-'+style.svgAttr;
+                        if (currentElement.getAttribute(attr)) {
+                             //fill-opacity or stroke-opacity has already been set by stroke or fill.
+                            continue;
+                        }
+                    }
+                    //otherwise only update attribute if right type, and not svg default
+                    currentElement.setAttribute(attr, value);
                 }
             }
         }
@@ -468,185 +488,169 @@
     ctx.prototype.save = function () {
         var group = this.__createElement("g");
         var parent = this.__closestGroupOrSvg();
+        var state = this.__getStyleState();
         this.__groupStack.push(parent);
         parent.appendChild(group);
         this.__currentElement = group;
-        this.__stack.push(this.__getStyleState());
+        this.__stack.push(state);
     };
+
     /**
      * Sets current element to parent, or just root if already root
      */
     ctx.prototype.restore = function () {
-        this.__currentElement = this.__groupStack.pop();
-        this.__currentElementsToStyle = null;
-        //Clearing canvas will make the poped group invalid, currentElement is set to the root group node.
-        if (!this.__currentElement) {
-            this.__currentElement = this.__root.childNodes[1];
-        }
+        var element = this.__groupStack.pop();
         var state = this.__stack.pop();
+
+        /** Prune empty group created when running save/restore without any content **/
+        var node = this.__currentElement;
+        if (node.nodeName === 'g' && !node.childNodes.length) {
+            node.remove();
+        }
+
+        this.__currentElementsToStyle = null;
+        this.__currentElement = element || this.__root.childNodes[1];
         this.__applyStyleState(state);
     };
 
-    /**
-     * Helper method to add transform
-     * @private
-     */
-    ctx.prototype.__addTransform = function (t) {
-        //if the current element has siblings, add another group
-        var parent = this.__closestGroupOrSvg();
-        if (parent.childNodes.length > 0) {
-        	if (this.__currentElement.nodeName === "path") {
-        		if (!this.__currentElementsToStyle) this.__currentElementsToStyle = {element: parent, children: []};
-        		this.__currentElementsToStyle.children.push(this.__currentElement)
-        		this.__applyCurrentDefaultPath();
-        	}
-
-            var group = this.__createElement("g");
-            parent.appendChild(group);
-            this.__currentElement = group;
+    ctx.prototype.__applyTransform = function (element, paintMethod) {
+        if (!element) {
+            return;
         }
 
-        var transform = this.__currentElement.getAttribute("transform");
-        if (transform) {
-            transform += " ";
-        } else {
-            transform = "";
+        var matrix = this.__currentMatrix;
+        if (matrix.isIdentity) {
+            return;
         }
-        transform += t;
-        this.__currentElement.setAttribute("transform", transform);
+
+        if (paintMethod) {
+            var style = this[`${paintMethod}Style`];
+            if (!style || !style.__root) {
+                return;
+            }
+
+            var styleId = style.__root.getAttribute("id");
+            var linkedReferences = ++style.__linkedReferences;
+            var id = `${styleId}-${linkedReferences}`;
+            element.setAttribute(paintMethod, `url(#${id})`);
+
+            var link = this.__createElement(style.__root.nodeName);
+            link.setAttribute("id", id)
+            link.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", `#${styleId}`);
+
+            if (style instanceof CanvasGradient) {
+                link.setAttribute("gradientTransform", matrix.toString());
+            } else if (style instanceof CanvasPattern) {
+                link.setAttribute("patternTransform", matrix.toString());
+            }
+
+            this.__defs.appendChild(link);
+            return;
+        }
+
+        element.setAttribute("transform", matrix.toString());
     };
 
     /**
      *  scales the current element
      */
-    ctx.prototype.scale = function (x, y) {
-        if (y === undefined) {
-            y = x;
-        }
-        this.__addTransform(format("scale({x},{y})", {x:x, y:y}));
+    ctx.prototype.scale = function (x, y = x) {
+        this.__currentMatrix.scaleSelf(x, y);
+        this.__globalMatrix.scaleSelf(x, y);
     };
 
     /**
      * rotates the current element
      */
     ctx.prototype.rotate = function (angle) {
-        var degrees = (angle * 180 / Math.PI);
-        this.__addTransform(format("rotate({angle},{cx},{cy})", {angle:degrees, cx:0, cy:0}));
+        var degrees = angle * 180 / Math.PI;
+        this.__currentMatrix.rotateSelf(degrees);
+        this.__globalMatrix.rotateSelf(degrees);
     };
 
     /**
      * translates the current element
      */
     ctx.prototype.translate = function (x, y) {
-        this.__addTransform(format("translate({x},{y})", {x:x,y:y}));
+        this.__currentMatrix.translateSelf(x, y);
+        this.__globalMatrix.translateSelf(x, y);
     };
 
     /**
      * applies a transform to the current element
      */
     ctx.prototype.transform = function (a, b, c, d, e, f) {
-        this.__addTransform(format("matrix({a},{b},{c},{d},{e},{f})", {a:a, b:b, c:c, d:d, e:e, f:f}));
+        var matrix = new DOMMatrix([a, b, c, d, e, f]);
+        this.__currentMatrix.multiplySelf(matrix);
+        this.__globalMatrix.multiplySelf(matrix);
+    };
+
+    ctx.prototype.setTransform = function (a, b, c, d, e, f) {
+        this.__currentMatrix = new DOMMatrix([a, b, c, d, e, f]);
+        this.__globalMatrix = new DOMMatrix([a, b, c, d, e, f]);
     };
 
     /**
      * Create a new Path Element
      */
     ctx.prototype.beginPath = function () {
-        var path, parent;
-
         // Note that there is only one current default path, it is not part of the drawing state.
         // See also: https://html.spec.whatwg.org/multipage/scripting.html#current-default-path
-        this.__currentDefaultPath = "";
+        this.__currentPath = "";
         this.__currentPosition = {};
-
-        path = this.__createElement("path", {}, true);
-        parent = this.__closestGroupOrSvg();
-        parent.appendChild(path);
-        this.__currentElement = path;
-    };
-
-    /**
-     * Helper function to apply currentDefaultPath to current path element
-     * @private
-     */
-    ctx.prototype.__applyCurrentDefaultPath = function () {
-    	var currentElement = this.__currentElement;
-        if (currentElement.nodeName === "path") {
-			currentElement.setAttribute("d", this.__currentDefaultPath);
-        } else {
-			console.error("Attempted to apply path command to node", currentElement.nodeName);
-        }
-    };
-
-    /**
-     * Helper function to add path command
-     * @private
-     */
-    ctx.prototype.__addPathCommand = function (command) {
-        this.__currentDefaultPath += " ";
-        this.__currentDefaultPath += command;
-    };
-
-    /**
-     * Adds the move command to the current path element,
-     * if the currentPathElement is not empty create a new path element
-     */
-    ctx.prototype.moveTo = function (x,y) {
-        if (this.__currentElement.nodeName !== "path") {
-            this.beginPath();
-        }
-
-        // creates a new subpath with the given point
-        this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
     };
 
     /**
      * Closes the current path
      */
     ctx.prototype.closePath = function () {
-        if (this.__currentDefaultPath) {
-            this.__addPathCommand("Z");
+        if (this.__currentPath) {
+            this.__currentPath += "Z";
         }
+    };
+
+    /**
+     * Adds the move command to the current path element,
+     * if the currentPathElement is not empty create a new path element
+     */
+    ctx.prototype.moveTo = function (x, y) {
+        var point = point2d(this.__currentMatrix, x, y);
+        // creates a new subpath with the given point
+        setCurrentPath.call(this, point.x, point.y, `M ${point.x} ${point.y}`);
     };
 
     /**
      * Adds a line to command
      */
     ctx.prototype.lineTo = function (x, y) {
-        this.__currentPosition = {x: x, y: y};
-        if (this.__currentDefaultPath.indexOf('M') > -1) {
-            this.__addPathCommand(format("L {x} {y}", {x:x, y:y}));
-        } else {
-            this.__addPathCommand(format("M {x} {y}", {x:x, y:y}));
-        }
+        var point = point2d(this.__currentMatrix, x, y);
+        setCurrentPath.call(this, point.x, point.y, `L ${point.x} ${point.y}`);
     };
 
     /**
      * Add a bezier command
      */
     ctx.prototype.bezierCurveTo = function (cp1x, cp1y, cp2x, cp2y, x, y) {
-        this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("C {cp1x} {cp1y} {cp2x} {cp2y} {x} {y}",
-            {cp1x:cp1x, cp1y:cp1y, cp2x:cp2x, cp2y:cp2y, x:x, y:y}));
+        var point = point2d(this.__currentMatrix, x, y);
+        var cp1 = point2d(this.__currentMatrix, cp1x, cp1y);
+        var cp2 = point2d(this.__currentMatrix, cp2x, cp2y);
+        setCurrentPath.call(this, point.x, point.y, `C ${cp1.x} ${cp1.y} ${cp2.x} ${cp2.y} ${point.x} ${point.y}`);
     };
 
     /**
      * Adds a quadratic curve to command
      */
     ctx.prototype.quadraticCurveTo = function (cpx, cpy, x, y) {
-        this.__currentPosition = {x: x, y: y};
-        this.__addPathCommand(format("Q {cpx} {cpy} {x} {y}", {cpx:cpx, cpy:cpy, x:x, y:y}));
+        var point = point2d(this.__currentMatrix, x, y);
+        var cp = point2d(this.__currentMatrix, cpx, cpy);
+        setCurrentPath.call(this, point.x, point.y, `Q ${cp.x} ${cp.y} ${point.x} ${point.y}`);
     };
 
-
-    /**
-     * Return a new normalized vector of given vector
-     */
-    var normalize = function (vector) {
-        var len = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
-        return [vector[0] / len, vector[1] / len];
-    };
+    function setCurrentPath(x, y, value)  {
+        this.__currentPosition = {x, y};
+        this.__currentPath || (this.__currentPath = "");
+        this.__currentPath += value;
+    }
 
     /**
      * Adds the arcTo to the current path
@@ -676,7 +680,7 @@
         if (((x0 === x1) && (y0 === y1))
             || ((x1 === x2) && (y1 === y2))
             || (radius === 0)) {
-            this.lineTo(x1, y1);
+            moveOrLineTo.call(this, x1, y1);
             return;
         }
 
@@ -686,7 +690,7 @@
         var unit_vec_p1_p0 = normalize([x0 - x1, y0 - y1]);
         var unit_vec_p1_p2 = normalize([x2 - x1, y2 - y1]);
         if (unit_vec_p1_p0[0] * unit_vec_p1_p2[1] === unit_vec_p1_p0[1] * unit_vec_p1_p2[0]) {
-            this.lineTo(x1, y1);
+            moveOrLineTo.call(this, x1, y1);
             return;
         }
 
@@ -733,8 +737,8 @@
         var endAngle = getAngle(unit_vec_origin_end_tangent);
 
         // Connect the point (x0, y0) to the start tangent point by a straight line
-        this.lineTo(x + unit_vec_origin_start_tangent[0] * radius,
-                    y + unit_vec_origin_start_tangent[1] * radius);
+        moveOrLineTo.call(this, x + unit_vec_origin_start_tangent[0] * radius,
+                                y + unit_vec_origin_start_tangent[1] * radius);
 
         // Connect the start tangent point to the end tangent point by arc
         // and adding the end tangent point to the subpath.
@@ -742,34 +746,134 @@
     };
 
     /**
-     * Sets the stroke property on the current element
+     * Return a new normalized vector of given vector
      */
-    ctx.prototype.stroke = function () {
-        if (this.__currentElement.nodeName === "path") {
-            this.__currentElement.setAttribute("paint-order", "fill stroke markers");
-        }
-        this.__applyCurrentDefaultPath();
-        this.__applyStyleToCurrentElement("stroke");
+    function normalize(vector) {
+        var len = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
+        return [vector[0] / len, vector[1] / len];
     };
 
     /**
      * Sets fill properties on the current element
      */
     ctx.prototype.fill = function () {
-        if (this.__currentElement.nodeName === "path") {
-            this.__currentElement.setAttribute("paint-order", "stroke fill markers");
+        var element = getOrCreateElementToApplyStyleTo.call(this, "fill", "stroke");
+        if (element) {
+            /** `fillRule` could be first or second argument: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fill **/
+            if (arguments[0] === "evenodd" || arguments[1] === "evenodd") {
+                element.setAttribute("fill-rule", "evenodd");
+            }
         }
-        this.__applyCurrentDefaultPath();
-        this.__applyStyleToCurrentElement("fill");
+    };
+
+    /**
+     * Sets the stroke property on the current element
+     */
+    ctx.prototype.stroke = function () {
+        getOrCreateElementToApplyStyleTo.call(this, "stroke", "fill");
+    };
+
+    function getOrCreateElementToApplyStyleTo(paintMethod1, paintMethod2) {
+        var currentPath = this.__currentPath;
+        if (!currentPath) {
+            return;
+        }
+
+        var element = this.__currentElement;
+        var group = this.__closestGroupOrSvg();
+        var matrixString = this.__currentMatrix.toString();
+        var state = group.__state || (group.__state = {});
+        if (state[paintMethod1] || state[paintMethod2] && state.matrixString !== matrixString) {
+            var pathHasNoChange = currentPath === state.currentPath;
+            if (pathHasNoChange) {
+                /** Convert <path> to <def> **/
+                if (element.nodeName === "path") {
+                    convertPathToDef.call(this, group);
+                }
+
+                /** Append <use> element references <def> **/
+                element = appendUseElement.call(this, group, state.id);
+            } else {
+                applyCurrentDefaultPath.call(this, true);
+            }
+        } else {
+            applyCurrentDefaultPath.call(this, false);
+        }
+
+        element.setAttribute("paint-order", `${paintMethod2} ${paintMethod1} markers`);
+
+        state[paintMethod1] = true;
+        state.currentPath = currentPath;
+        state.matrixString = matrixString;
+
+        this.__applyStyleToCurrentElement(paintMethod1);
+        this.__applyTransform(element, paintMethod1);
+
+        return element;
+    };
+
+    function applyCurrentDefaultPath(needsNewPath) {
+        var element = this.__currentElement;
+        var path = this.__currentPath;
+        if (!path) {
+            return
+        }
+
+        if (needsNewPath || element.nodeName !== "path") {
+            var group = this.__closestGroupOrSvg();
+            element = this.__currentElement = this.__createElement("path", {}, true);
+            group.appendChild(element);
+        }
+
+        element.setAttribute("d", path);
+    };
+
+    function hashString(string) {
+        /** https://github.com/darkskyapp/string-hash **/
+        let hash = 5381;
+        let i = string.length;
+        while (i) hash = (hash * 33) ^ string.charCodeAt(--i);
+        return hash >>> 0;
+    };
+
+    function convertPathToDef(group, id) {
+        var element = this.__currentElement;
+
+        /** Create <path> in <defs> **/
+        var extras = group.__state
+        var id = extras.id
+        if (!id) {
+            id = extras.id = `path-${hashString(extras.currentPath)}`;
+            var link = this.__createElement("path");
+            link.setAttribute("id", id);
+            link.setAttribute("d", element.getAttribute("d"));
+            this.__defs.appendChild(link);
+        }
+
+        /** Convert previous <path> to <use> **/
+        if (element.nodeName === "path") {
+            element.remove();
+            var attributes = element.attributes;
+            element = appendUseElement.call(this, group, id);
+            for (var i = 0; i < attributes.length; i ++) {
+                var attribute = attributes[i];
+                if (attribute.name === "d") continue;
+                element.setAttribute(attribute.name, attribute.value);
+            }
+        }
+    };
+
+    function appendUseElement(group, id) {
+        var element = this.__currentElement = this.__createElement("use", {}, true);
+        element.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", `#${id}`);
+        group.appendChild(element);
+        return element;
     };
 
     /**
      *  Adds a rectangle to the path.
      */
     ctx.prototype.rect = function (x, y, width, height) {
-        if (this.__currentElement.nodeName !== "path") {
-            this.beginPath();
-        }
         this.moveTo(x, y);
         this.lineTo(x+width, y);
         this.lineTo(x+width, y+height);
@@ -794,6 +898,7 @@
         parent.appendChild(rect);
         this.__currentElement = rect;
         this.__applyStyleToCurrentElement("fill");
+        this.__applyTransform(rect);
     };
 
     /**
@@ -815,41 +920,31 @@
         parent.appendChild(rect);
         this.__currentElement = rect;
         this.__applyStyleToCurrentElement("stroke");
+        this.__applyTransform(rect);
     };
 
 
     /**
-     * Clear entire canvas:
-     * 1. save current transforms
-     * 2. remove all the childNodes of the root g element
-     */
-    ctx.prototype.__clearCanvas = function () {
-        var current = this.__closestGroupOrSvg(),
-            transform = current.getAttribute("transform");
-        var rootGroup = this.__root.childNodes[1];
-        var childNodes = rootGroup.childNodes;
-        for (var i = childNodes.length - 1; i >= 0; i--) {
-            if (childNodes[i]) {
-                rootGroup.removeChild(childNodes[i]);
-            }
-        }
-        this.__currentElement = rootGroup;
-        //reset __groupStack as all the child group nodes are all removed.
-        this.__groupStack = [];
-        if (transform) {
-            this.__addTransform(transform);
-        }
-    };
-
-    /**
-     * "Clears" a canvas by just drawing a white rectangle in the current group.
+     * Clears region of a canvas.
+     * @param x
+     * @param y
+     * @param width
+     * @param height
      */
     ctx.prototype.clearRect = function (x, y, width, height) {
-        //clear entire canvas
-        if (x === 0 && y === 0 && width === this.width && height === this.height) {
-            this.__clearCanvas();
-            return;
+        var p1 = point2d(this.__globalMatrix, x, y);
+        var p2 = point2d(this.__globalMatrix, x + width, y + height);
+        if (p1.x <= 0 && p1.y <= 0 && p2.x >= this.width && p2.y >= this.height) {
+            clearCanvas.call(this);
+        } else {
+            clearByPaintingBackground.call(this, x, y, width, height)
         }
+    };
+
+    /**
+     * "Clears" a canvas by drawing a white rectangle in the current group.
+     */
+    function clearByPaintingBackground(x, y, width, height) {
         var rect, parent = this.__closestGroupOrSvg();
         rect = this.__createElement("rect", {
             x : x,
@@ -859,6 +954,30 @@
             fill : "#FFFFFF"
         }, true);
         parent.appendChild(rect);
+    }
+
+    /**
+     * Clears entire canvas by removing all the childNodes of the root <g> element.
+     */
+    function clearCanvas() {
+        var rootGroup = this.__root.childNodes[1];
+        var childNodes = rootGroup.childNodes;
+        childNodes.forEach(function (childNode) {
+            childNode.remove();
+        })
+
+        this.__currentElement = rootGroup;
+        this.__groupStack = [];
+    };
+
+    function point2d(matrix, x, y) {
+        if (matrix.isIdentity) {
+            return {x: x, y: y}
+        }
+        return {
+            x: matrix.a * x + matrix.c * y + matrix.e,
+            y: matrix.b * x + matrix.d * y + matrix.f
+        };
     };
 
     /**
@@ -866,14 +985,16 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createLinearGradient = function (x1, y1, x2, y2) {
+        var point1 = point2d(this.__currentMatrix, x1, y1);
+        var point2 = point2d(this.__currentMatrix, x2, y2);
         var grad = this.__createElement("linearGradient", {
             id : randomString(this.__ids),
-            x1 : x1+"px",
-            x2 : x2+"px",
-            y1 : y1+"px",
-            y2 : y2+"px",
-            "gradientUnits" : "userSpaceOnUse"
-        }, false);
+            x1 : point1.x+"px",
+            x2 : point2.x+"px",
+            y1 : point1.y+"px",
+            y2 : point2.y+"px",
+            gradientUnits : "userSpaceOnUse"
+        });
         this.__defs.appendChild(grad);
         return new CanvasGradient(grad, this);
     };
@@ -883,18 +1004,57 @@
      * Returns a canvas gradient object that has a reference to it's parent def
      */
     ctx.prototype.createRadialGradient = function (x0, y0, r0, x1, y1, r1) {
+        var scale = getCurrentScale.call(this)
+        var point0 = point2d(this.__currentMatrix, x0, y0);
+        var point1 = point2d(this.__currentMatrix, x1, y1);
         var grad = this.__createElement("radialGradient", {
             id : randomString(this.__ids),
-            cx : x1+"px",
-            cy : y1+"px",
-            r  : r1+"px",
-            fx : x0+"px",
-            fy : y0+"px",
-            "gradientUnits" : "userSpaceOnUse"
-        }, false);
+            cx : point1.x+"px",
+            cy : point1.y+"px",
+            r  : r1*scale+"px",
+            fx : point0.x+"px",
+            fy : point0.y+"px",
+            gradientUnits : "userSpaceOnUse"
+        });
         this.__defs.appendChild(grad);
         return new CanvasGradient(grad, this);
+    };
 
+    function getCurrentScale() {
+        // Extracted from: http://hg.mozilla.org/mozilla-central/file/7cb3e9795d04/layout/style/nsStyleAnimation.cpp
+        // MPL 1.1 license
+
+        const matrix = this.__currentMatrix
+        let scaleX = 0
+        let scaleY = 0
+        let skewX = 0
+        let a = matrix.a
+        let b = matrix.b
+        let c = matrix.c
+        let d = matrix.d
+
+        const determinant = a * d - b * c
+        if (determinant) {
+            /** Compute X scale factor and normalize first row **/
+            scaleX = Math.sqrt(a * a + b * b)
+            a /= scaleX
+            b /= scaleX
+
+            /** Compute shear factor and make 2nd row orthogonal to 1st **/
+            skewX = a * c + b * d
+            c -= a * skewX
+            d -= b * skewX
+
+            /** Compute Y scale **/
+            scaleY = Math.sqrt(c * c + d * d)
+
+            /** Negate **/
+            if (determinant < 0) {
+                scaleX = -scaleX
+            }
+        }
+
+        return Math.max(scaleX, scaleY)
     };
 
     /**
@@ -902,7 +1062,7 @@
      * @private
      */
     ctx.prototype.__parseFont = function () {
-        var regex = /^\s*(?=(?:(?:[-a-z]+\s*){0,2}(italic|oblique))?)(?=(?:(?:[-a-z]+\s*){0,2}(small-caps))?)(?=(?:(?:[-a-z]+\s*){0,2}(bold(?:er)?|lighter|[1-9]00))?)(?:(?:normal|\1|\2|\3)\s*){0,3}((?:xx?-)?(?:small|large)|medium|smaller|larger|[.\d]+(?:\%|in|[cem]m|ex|p[ctx]))(?:\s*\/\s*(normal|[.\d]+(?:\%|in|[cem]m|ex|p[ctx])))?\s*([-,\'\"\sa-z0-9]+?)\s*$/i;
+        var regex = /^\s*(?=(?:(?:[-a-z]+\s*){0,2}(italic|oblique))?)(?=(?:(?:[-a-z]+\s*){0,2}(small-caps))?)(?=(?:(?:[-a-z]+\s*){0,2}(bold(?:er)?|lighter|[1-9]00))?)(?:(?:normal|\1|\2|\3)\s*){0,3}((?:xx?-)?(?:small|large)|medium|smaller|larger|[.\d]+(?:\%|in|[cem]m|ex|p[ctx]))(?:\s*\/\s*(normal|[.\d]+(?:\%|in|[cem]m|ex|p[ctx])))?\s*([-_,\'\"\sa-z0-9]+?)\s*$/i;
         var fontPart = regex.exec( this.font );
         var data = {
             style : fontPart[1] || 'normal',
@@ -967,9 +1127,10 @@
             }, true);
 
         textElement.appendChild(this.__document.createTextNode(text));
+        parent.appendChild(this.__wrapTextLink(font, textElement));
         this.__currentElement = textElement;
         this.__applyStyleToCurrentElement(action);
-        parent.appendChild(this.__wrapTextLink(font,textElement));
+        this.__applyTransform(textElement, action);
     };
 
     /**
@@ -1035,38 +1196,52 @@
             largeArcFlag = diff > Math.PI ? 1 : 0;
         }
 
-        this.lineTo(startX, startY);
-        this.__addPathCommand(format("A {rx} {ry} {xAxisRotation} {largeArcFlag} {sweepFlag} {endX} {endY}",
-            {rx:radius, ry:radius, xAxisRotation:0, largeArcFlag:largeArcFlag, sweepFlag:sweepFlag, endX:endX, endY:endY}));
+        moveOrLineTo.call(this, startX, startY);
 
+        var rx = radius,
+            ry = radius,
+            xAxisRotation = 0;
+
+        this.__currentPath += `A ${rx} ${ry} ${xAxisRotation} ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
         this.__currentPosition = {x: endX, y: endY};
     };
+
+    function moveOrLineTo(x, y) {
+        if (this.__currentPath) {
+            this.lineTo(x, y);
+        } else {
+            this.moveTo(x, y);
+        }
+    }
 
     /**
      * Generates a ClipPath from the clip command.
      */
     ctx.prototype.clip = function () {
+        if (!this.__currentPath) {
+            return;
+        }
+
+        applyCurrentDefaultPath.call(this, false);
+
         var group = this.__closestGroupOrSvg(),
             clipPath = this.__createElement("clipPath"),
-            id =  randomString(this.__ids),
+            id = randomString(this.__ids),
             newGroup = this.__createElement("g");
 
-        this.__applyCurrentDefaultPath();
-        group.removeChild(this.__currentElement);
         clipPath.setAttribute("id", id);
         clipPath.appendChild(this.__currentElement);
 
         this.__defs.appendChild(clipPath);
 
         //set the clip path to this group
-        group.setAttribute("clip-path", format("url(#{id})", {id:id}));
+        group.setAttribute("clip-path", `url(#${id})`);
 
         //clip paths can be scaled and transformed, we need to add another wrapper group to avoid later transformations
         // to this path
         group.appendChild(newGroup);
 
         this.__currentElement = newGroup;
-
     };
 
     /**
@@ -1078,8 +1253,8 @@
         //convert arguments to a real array
         var args = Array.prototype.slice.call(arguments),
             image=args[0],
-            dx, dy, dw, dh, sx=0, sy=0, sw, sh, parent, svg, defs, group,
-            currentElement, svgImage, canvas, context, id;
+            dx, dy, dw, dh, sx=0, sy=0, sw, sh, svg, defs, group,
+            svgImage, canvas, context, id;
 
         if (args.length === 3) {
             dx = args[1];
@@ -1108,8 +1283,7 @@
             throw new Error("Invalid number of arguments passed to drawImage: " + arguments.length);
         }
 
-        parent = this.__closestGroupOrSvg();
-        currentElement = this.__currentElement;
+        var parent = this.__closestGroupOrSvg();
         var translateDirective = "translate(" + dx + ", " + dy + ")";
         if (image instanceof ctx) {
             //canvas2svg mock canvas context. In the future we may want to clone nodes instead.
@@ -1141,6 +1315,7 @@
             svgImage = this.__createElement("image");
             svgImage.setAttribute("width", dw);
             svgImage.setAttribute("height", dh);
+            svgImage.setAttribute("opacity", this.globalAlpha);
             svgImage.setAttribute("preserveAspectRatio", "none");
 
             if (sx || sy || sw !== image.width || sh !== image.height) {
@@ -1162,14 +1337,15 @@
     /**
      * Generates a pattern tag
      */
-    ctx.prototype.createPattern = function (image, repetition) {
-        var pattern = this.__document.createElementNS("http://www.w3.org/2000/svg", "pattern"), id = randomString(this.__ids),
+    ctx.prototype.createPattern = function (image, repeat) {
+        var pattern = createElementNS(this, "pattern"), id = randomString(this.__ids),
             img;
         pattern.setAttribute("id", id);
         pattern.setAttribute("width", image.width);
         pattern.setAttribute("height", image.height);
+        pattern.setAttribute("patternUnits", "userSpaceOnUse");
         if (image.nodeName === "CANVAS" || image.nodeName === "IMG") {
-            img = this.__document.createElementNS("http://www.w3.org/2000/svg", "image");
+            img = createElementNS(this, "image");
             img.setAttribute("width", image.width);
             img.setAttribute("height", image.height);
             img.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href",
@@ -1191,6 +1367,10 @@
         }
     };
 
+    function createElementNS(svg, nodeName) {
+        return svg.__document.createElementNS("http://www.w3.org/2000/svg", nodeName)
+    }
+
     /**
      * Not yet implemented
      */
@@ -1199,7 +1379,6 @@
     ctx.prototype.getImageData = function () {};
     ctx.prototype.putImageData = function () {};
     ctx.prototype.globalCompositeOperation = function () {};
-    ctx.prototype.setTransform = function () {};
 
     //add options for alternative namespace
     if (typeof window === "object") {
@@ -1210,5 +1389,4 @@
     if (typeof module === "object" && typeof module.exports === "object") {
         module.exports = ctx;
     }
-
 }());
