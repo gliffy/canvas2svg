@@ -1200,6 +1200,7 @@
     ctx.prototype.putImageData = function () {};
     ctx.prototype.globalCompositeOperation = function () {};
     ctx.prototype.setTransform = function () {};
+		ctx.prototype.resetTransform = function () {};
 
     //add options for alternative namespace
     if (typeof window === "object") {
