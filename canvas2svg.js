@@ -1191,6 +1191,23 @@
         }
     };
 
+    /* Chart JS v4.2.1 Compatibility */
+    ctx.prototype.getContext = function (contextId) {
+        if (String(contextId).toUpperCase() === '2D') {
+            return this
+        }
+        return null
+    }
+    ctx.prototype.style = function () {
+        return this.__canvas.style
+    }
+    ctx.prototype.getAttribute = function (prop_name) {
+        return this[prop_name]
+    }
+    ctx.prototype.resetTransform = function () {
+        this.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
     /**
      * Not yet implemented
      */
@@ -1200,6 +1217,8 @@
     ctx.prototype.putImageData = function () {};
     ctx.prototype.globalCompositeOperation = function () {};
     ctx.prototype.setTransform = function () {};
+    ctx.prototype.resetTransform = function() {};
+    ctx.prototype.addEventListener = function (type, listener, eventListenerOptions) {};
 
     //add options for alternative namespace
     if (typeof window === "object") {
