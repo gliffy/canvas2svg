@@ -8,7 +8,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "./node_modules/.bin/karma start --browsers Firefox --single-run"
+    "test-firefox": "karma start --browsers Firefox --single-run",
+    "test-chrome": "karma start --browsers Chrome --single-run",
+    "test": "npm run test-firefox && npm run test-chrome",
+    "bump": "gulp bump",
+    "update-examples": "gulp update_examples"
   },
   "keywords": [
     "canvas",
@@ -19,17 +23,18 @@
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
-    "chai": "^2.1.1",
-    "cheerio": "^0.19.0",
-    "gulp": "^3.9.0",
-    "gulp-bump": "^0.3.1",
-    "karma": "^0.12.36",
+    "chai": "^4.3.7",
+    "cheerio": "^1.0.0-rc.12",
+    "esm": "^3.2.25",
+    "gulp": "^4.0.2",
+    "gulp-bump": "^3.2.0",
+    "karma": "^6.4.2",
     "karma-chai": "^0.1.0",
-    "karma-chrome-launcher": "^0.1.12",
-    "karma-firefox-launcher": "^0.1.6",
-    "karma-mocha": "^0.1.10",
-    "karma-mocha-reporter": "^1.0.2",
-    "mocha": "^2.2.5",
-    "resemblejs": "^1.2.1"
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-firefox-launcher": "^2.1.2",
+    "karma-mocha": "^2.0.1",
+    "karma-mocha-reporter": "^2.2.5",
+    "mocha": "^10.2.0",
+    "resemblejs": "^4.1.0"
   }
 }
