@@ -1,6 +1,6 @@
 {
-  "name": "canvas2svg",
-  "version": "1.0.19",
+  "name": "@lumel/canvas2svg",
+  "version": "1.0.20",
   "description": "canvas2svg",
   "main": "canvas2svg.js",
   "homepage": "http://gliffy.github.io/canvas2svg/",
